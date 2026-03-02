@@ -73,7 +73,7 @@ export interface CategoryProgress {
 // 档案定义
 export interface Profile {
   id: string;
-  name: string;           // 档案名称，如 "田 & 1"
+  name: string;           // 档案名称，如 "小明 & 小红"
   fromName: string;       // 填表人名字
   toName: string;         // 指向对象名字
   relationLabel: string;  // 关系标签

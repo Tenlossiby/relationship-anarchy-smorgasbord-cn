@@ -65,7 +65,7 @@ function NewProfileContent() {
               type="text"
               value={name}
               onChange={(e) => setName(e.target.value)}
-              placeholder="例如：田 & 1"
+              placeholder="例如：小明 & 小红"
               className="w-full px-4 py-3 rounded-xl border border-[#D9D4CC] focus:border-[#7A9B76] focus:outline-none transition-colors"
             />
           </div>
@@ -79,7 +79,7 @@ function NewProfileContent() {
               type="text"
               value={fromName}
               onChange={(e) => setFromName(e.target.value)}
-              placeholder="例如：田"
+              placeholder="例如：小明"
               className="w-full px-4 py-3 rounded-xl border border-[#D9D4CC] focus:border-[#7A9B76] focus:outline-none transition-colors"
             />
           </div>
