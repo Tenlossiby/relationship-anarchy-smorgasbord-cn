@@ -319,12 +319,23 @@ ra-smorgasbord/
 
 ## 📄 许可协议
 
+<<<<<<< HEAD
 | 类型 | 协议 | 说明 | 链接 |
 |------|------|------|------|
 | 📄 **图表内容** | CC BY-NC-SA 4.0 | 知识共享署名-非商业性使用-相同方式共享 4.0 国际许可协议（中文翻译） | [查看详情](https://creativecommons.org/licenses/by-nc-sa/4.0/deed.zh) |
 | 💻 **软件开源** | MIT License | 本 Web App 采用 MIT 许可协议开源 | [查看详情](https://github.com/Tenlossiby/relationship-anarchy-smorgasbord-cn/blob/main/LICENSE) |
 
 ⚠️ **重要提示**：使用或分享时，请务必保留原作者署名信息。
+=======
+📄 图表内容许可
+采用知识共享署名-非商业性使用-相同方式共享 4.0 国际许可协议授权。
+[CC BY-NC-SA 4.0](https://creativecommons.org/licenses/by-nc-sa/4.0/deed.zh)
+>>>>>>> 9323e3193105bd38b61ea00ae92e2c682eaf386e
+
+💻 软件开源许可
+本 Web App 采用 MIT 许可协议开源。
+
+⚠️ 重要提示：使用或分享时，请务必保留原作者署名信息。
 
 ---
 
@@ -365,12 +376,19 @@ ra-smorgasbord/
 
 本项目采用 [MIT License](LICENSE) 开源协议。
 
+<<<<<<< HEAD
 | 权限 | 说明 |
 |------|------|
 | ✅ 允许修改 | 可以自由修改代码 |
 | ✅ 允许分发 | 可以自由分发 |
 | ✅ 允许私人使用 | 可以私人使用 |
 | ⚠️ 需保留版权 | 必须保留版权声明和许可证 |
+=======
+- ✅ 允许修改
+- ✅ 允许分发
+- ✅ 允许私人使用
+- ⚠️ 需保留版权声明和许可证
+>>>>>>> 9323e3193105bd38b61ea00ae92e2c682eaf386e
 
 ---
 
