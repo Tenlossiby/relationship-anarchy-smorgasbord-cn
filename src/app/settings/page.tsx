@@ -174,12 +174,49 @@ export default function SettingsPage() {
         <section className="bg-card rounded-2xl p-5 mb-6 shadow-sm">
           <h2 className="font-medium text-card-foreground mb-4">许可协议</h2>
 
-          <p className="text-sm text-muted-foreground">
-            本作品采用知识共享署名-非商业性使用-相同方式共享 4.0 国际许可协议授权。
-          </p>
-          <p className="text-xs text-muted-foreground mt-2">
-            Creative Commons Attribution-NonCommercial-ShareAlike 4.0 International License
-          </p>
+          <div className="space-y-3">
+            <div>
+              <h3 className="text-sm font-medium text-card-foreground mb-1">
+                📄 图表内容许可
+              </h3>
+              <p className="text-sm text-muted-foreground">
+                采用知识共享署名-非商业性使用-相同方式共享 4.0 国际许可协议（中文翻译）授权。
+              </p>
+              <a
+                href="https://creativecommons.org/licenses/by-nc-sa/4.0/deed.zh"
+                target="_blank"
+                rel="noopener noreferrer"
+                className="inline-flex items-center gap-1 text-xs text-primary hover:underline mt-1"
+              >
+                查看 CC BY-NC-SA 4.0 协议详情
+                <ExternalLink className="w-3 h-3" />
+              </a>
+            </div>
+
+            <div className="border-t border-border pt-3">
+              <h3 className="text-sm font-medium text-card-foreground mb-1">
+                💻 软件开源许可
+              </h3>
+              <p className="text-sm text-muted-foreground">
+                本 Web App 采用 MIT 许可协议开源。
+              </p>
+              <a
+                href="https://github.com/Tenlossiby/relationship-anarchy-smorgasbord-cn/blob/main/LICENSE"
+                target="_blank"
+                rel="noopener noreferrer"
+                className="inline-flex items-center gap-1 text-xs text-primary hover:underline mt-1"
+              >
+                查看 MIT 协议详情
+                <ExternalLink className="w-3 h-3" />
+              </a>
+            </div>
+
+            <div className="bg-secondary rounded-xl p-3">
+              <p className="text-xs text-muted-foreground">
+                ⚠️ <span className="font-medium">重要提示：</span>使用或分享时，请务必保留原作者署名信息。
+              </p>
+            </div>
+          </div>
         </section>
       </main>
 
