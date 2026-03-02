@@ -4,7 +4,7 @@
 
 一个多元包容的关系探索工具，帮助你和伙伴发现和记录动态的关系模式。
 
-[在线演示](#) · [功能特性](#功能特性) · [使用指南](#使用指南) · [技术栈](#技术栈)
+[🚀 在线演示](https://relationship-anarchy-smorgasbord-cn.netlify.app/) · [GitHub](https://github.com/Tenlossiby/relationship-anarchy-smorgasbord-cn) · [功能特性](#功能特性) · [使用指南](#使用指南)
 
 [English](./README_EN.md) | 简体中文
 
@@ -98,7 +98,7 @@
 
 ### 在线访问
 
-🌐 **访问地址**：[在这里填写你的网址](#)
+🌐 **访问地址**：[https://relationship-anarchy-smorgasbord-cn.netlify.app/](https://relationship-anarchy-smorgasbord-cn.netlify.app/)
 
 > ✨ 无需安装，直接在浏览器中打开即可使用！
 
@@ -419,8 +419,8 @@ ra-smorgasbord/
 ## 📮 联系方式
 
 - **本项目作者**：Tenlossiby
-- 项目主页：[GitHub Repository](https://github.com/your-username/ra-smorgasbord)
-- 问题反馈：[Issues](https://github.com/your-username/ra-smorgasbord/issues)
+- 项目主页：[GitHub Repository](https://github.com/Tenlossiby/relationship-anarchy-smorgasbord-cn)
+- 问题反馈：[Issues](https://github.com/Tenlossiby/relationship-anarchy-smorgasbord-cn/issues)
 
 ---
 
