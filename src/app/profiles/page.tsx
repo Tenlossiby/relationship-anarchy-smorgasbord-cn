@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, Suspense } from 'react';
 import Link from 'next/link';
 import { useRouter, useSearchParams } from 'next/navigation';
 import { Plus, ArrowRight, Download, Trash2, Check } from 'lucide-react';
@@ -9,7 +9,7 @@ import { BottomNav } from '@/components/BottomNav';
 import { cn } from '@/lib/utils';
 import { getTotalCards } from '@/data/categories';
 
-export default function ProfilesPage() {
+function ProfilesContent() {
   const router = useRouter();
   const searchParams = useSearchParams();
   const { profiles, selectedProfiles, toggleProfileSelection, clearSelection, deleteProfile } = useApp();
@@ -25,8 +25,10 @@ export default function ProfilesPage() {
       // 3秒后移除高亮效果
       const timer = setTimeout(() => {
         setHighlightProfileId(null);
-        // 清除URL参数
-        window.history.replaceState({}, '', '/profiles');
+        // 清除URL参数（仅在客户端执行）
+        if (typeof window !== 'undefined') {
+          window.history.replaceState({}, '', '/profiles');
+        }
       }, 3000);
 
       return () => clearTimeout(timer);
@@ -117,8 +119,8 @@ export default function ProfilesPage() {
                     >
                       <div className={cn(
                         'w-6 h-6 rounded-full border-2 flex items-center justify-center transition-colors',
-                        isSelected 
-                          ? 'bg-primary border-primary' 
+                        isSelected
+                          ? 'bg-primary border-primary'
                           : 'border-border'
                       )}>
                         {isSelected && <Check className="w-4 h-4 text-primary-foreground" />}
@@ -205,49 +207,32 @@ export default function ProfilesPage() {
                 );
               })}
             </div>
+
+            {/* Compare Button */}
+            {canCompare && (
+              <button
+                onClick={() => {
+                  const ids = selectedProfiles.join(',');
+                  router.push(`/compare?profiles=${ids}`);
+                }}
+                className="w-full mt-6 py-4 bg-primary text-primary-foreground rounded-2xl font-medium hover:bg-primary/90 transition-colors"
+              >
+                对比选中的档案（{selectedProfiles.length} 个）
+              </button>
+            )}
           </>
         )}
       </main>
 
-      {/* Compare Button */}
-      {profiles.length >= 2 && (
-        <div className="fixed bottom-20 left-0 right-0 px-4 pb-4 pt-8">
-          <div className="max-w-2xl mx-auto flex gap-3">
-            <button
-              onClick={clearSelection}
-              className={cn(
-                'flex-1 py-3 rounded-2xl font-medium transition-all',
-                selectedProfiles.length > 0
-                  ? 'bg-muted text-foreground'
-                  : 'bg-transparent'
-              )}
-            >
-              {selectedProfiles.length > 0 ? '清除选择' : ''}
-            </button>
-            <button
-              onClick={() => {
-                if (canCompare) {
-                  router.push(`/compare?profiles=${selectedProfiles.join(',')}`);
-                }
-              }}
-              disabled={!canCompare}
-              className={cn(
-                'flex-1 py-3 rounded-2xl font-medium transition-all',
-                canCompare
-                  ? 'bg-primary text-primary-foreground hover:bg-primary/90'
-                  : 'bg-muted text-muted-foreground cursor-not-allowed'
-              )}
-            >
-              {selectedProfiles.length > 0 
-                ? `对比 (${selectedProfiles.length})`
-                : '选择档案进行对比'
-              }
-            </button>
-          </div>
-        </div>
-      )}
-
       <BottomNav />
     </div>
+  );
+}
+
+export default function ProfilesPage() {
+  return (
+    <Suspense fallback={<div className="min-h-screen bg-background flex items-center justify-center">加载中...</div>}>
+      <ProfilesContent />
+    </Suspense>
   );
 }

@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, Suspense } from 'react';
 import { useRouter, useParams, useSearchParams } from 'next/navigation';
 import Link from 'next/link';
 import { ArrowLeft, ChevronLeft, ChevronRight, Check } from 'lucide-react';
@@ -10,7 +10,7 @@ import { STATUS_LABELS, StatusLabel, CardAnswer } from '@/types';
 import { updateCardAnswer, getProfile } from '@/lib/storage';
 import { cn } from '@/lib/utils';
 
-export default function CardDiscussionPage() {
+function CardDiscussionContent() {
   const router = useRouter();
   const params = useParams();
   const searchParams = useSearchParams();
@@ -185,7 +185,7 @@ export default function CardDiscussionPage() {
               &quot;{currentCard.contextQuestion}&quot;
             </p>
           )}
-          
+
           {/* Card Content */}
           <h2 className="text-xl font-medium text-[#4A4A4A] text-center mb-2">
             {currentCard.zh}
@@ -241,7 +241,7 @@ export default function CardDiscussionPage() {
             {statusList.map((status) => {
               const config = STATUS_LABELS[status];
               const isSelected = selectedStatuses.includes(status);
-              
+
               return (
                 <button
                   key={status}
@@ -298,5 +298,13 @@ export default function CardDiscussionPage() {
         </div>
       </div>
     </div>
+  );
+}
+
+export default function CardDiscussionPage() {
+  return (
+    <Suspense fallback={<div className="min-h-screen bg-[#F5F1EB] flex items-center justify-center">加载中...</div>}>
+      <CardDiscussionContent />
+    </Suspense>
   );
 }

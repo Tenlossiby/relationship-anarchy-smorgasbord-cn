@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useMemo } from 'react';
+import { useState, useMemo, Suspense } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
 import Link from 'next/link';
 import { ArrowLeft } from 'lucide-react';
@@ -23,7 +23,7 @@ interface CompareItem {
   }[];
 }
 
-export default function ComparePage() {
+function CompareContent() {
   const router = useRouter();
   const searchParams = useSearchParams();
   const { profiles } = useApp();
@@ -75,7 +75,7 @@ export default function ComparePage() {
   // 计算每个类别的对比项数量
   const categoryCounts = useMemo(() => {
     const counts: Record<string, number> = {};
-    
+
     for (const category of CATEGORIES) {
       let count = 0;
       for (const card of category.cards) {
@@ -87,7 +87,7 @@ export default function ComparePage() {
       }
       counts[category.id] = count;
     }
-    
+
     return counts;
   }, [selectedProfiles]);
 
@@ -118,7 +118,7 @@ export default function ComparePage() {
             </Link>
             <h1 className="text-lg font-bold text-[#4A4A4A]">档案对比</h1>
           </div>
-          
+
           {/* Selected Profiles */}
           <div className="flex flex-wrap gap-2">
             {selectedProfiles.map((profile) => (
@@ -139,7 +139,7 @@ export default function ComparePage() {
           {CATEGORIES.map((category) => {
             const count = categoryCounts[category.id] || 0;
             if (count === 0) return null;
-            
+
             return (
               <button
                 key={category.id}
@@ -193,7 +193,7 @@ export default function ComparePage() {
                         <p className="text-sm font-medium text-[#4A4A4A] mb-2">
                           {answer.profileName}
                         </p>
-                        
+
                         {answer.statuses.length > 0 ? (
                           <>
                             <div className="flex flex-wrap gap-1.5 mb-2">
@@ -202,7 +202,7 @@ export default function ComparePage() {
                                 return (
                                   <span
                                     key={status}
-                                    className="px-2 py-0.5 rounded-full text-xs text-white"
+                                    className="px-2 py-1 rounded-lg text-xs font-medium text-white"
                                     style={{ backgroundColor: config.color }}
                                   >
                                     {config.zh}
@@ -211,7 +211,7 @@ export default function ComparePage() {
                               })}
                             </div>
                             {answer.note && (
-                              <p className="text-sm text-[#6B6B6B] italic">
+                              <p className="text-sm text-[#6B6B6B] bg-white/50 rounded-lg p-2">
                                 📝 {answer.note}
                               </p>
                             )}
@@ -231,5 +231,13 @@ export default function ComparePage() {
 
       <BottomNav />
     </div>
+  );
+}
+
+export default function ComparePage() {
+  return (
+    <Suspense fallback={<div className="min-h-screen bg-[#F5F1EB] flex items-center justify-center">加载中...</div>}>
+      <CompareContent />
+    </Suspense>
   );
 }

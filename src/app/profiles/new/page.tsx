@@ -1,6 +1,6 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, Suspense } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
 import Link from 'next/link';
 import { ArrowLeft } from 'lucide-react';
@@ -9,155 +9,139 @@ import { RELATION_LABELS } from '@/types';
 import { BottomNav } from '@/components/BottomNav';
 import { cn } from '@/lib/utils';
 
-export default function NewProfilePage() {
+function NewProfileContent() {
   const router = useRouter();
   const searchParams = useSearchParams();
   const { createNewProfile } = useApp();
-  
+
   const categories = searchParams.get('categories')?.split(',').filter(Boolean) || [];
 
   const [name, setName] = useState('');
   const [fromName, setFromName] = useState('');
   const [toName, setToName] = useState('');
-  const [relationLabel, setRelationLabel] = useState('伴侣');
-  const [customLabel, setCustomLabel] = useState('');
-  const [isCustomLabel, setIsCustomLabel] = useState(false);
+  const [relationLabel, setRelationLabel] = useState('');
 
-  const handleSubmit = (e: React.FormEvent) => {
-    e.preventDefault();
-    
-    const profileName = name || `${fromName} & ${toName}`;
-    const label = isCustomLabel ? customLabel : relationLabel;
-    
-    const profile = createNewProfile(profileName, fromName, toName, label);
-    
-    // 跳转到卡牌讨论页面
+  const handleCreate = () => {
+    if (!fromName || !toName || !relationLabel) {
+      alert('请填写所有必填字段');
+      return;
+    }
+
+    const profile = createNewProfile(
+      name || `${fromName} & ${toName}`,
+      fromName,
+      toName,
+      relationLabel
+    );
+
     if (categories.length > 0) {
-      router.push(`/explore/${profile.id}?categories=${categories.join(',')}`);
+      router.push(`/explore/${profile.id}/${categories[0]}?categories=${categories.join(',')}`);
     } else {
       router.push(`/profiles/${profile.id}`);
     }
   };
 
   return (
-    <div className="min-h-screen bg-background pb-20">
+    <div className="min-h-screen bg-[#F5F1EB] pb-20">
       {/* Header */}
-      <header className="sticky top-0 z-40 bg-background/90 backdrop-blur-lg border-b border-border">
+      <header className="sticky top-0 z-40 bg-[#F5F1EB]/90 backdrop-blur-lg border-b border-[#D9D4CC]">
         <div className="max-w-2xl mx-auto px-4 py-4 flex items-center gap-4">
-          <Link href="/profiles" className="p-1 text-muted-foreground hover:text-foreground">
+          <Link href="/profiles" className="p-1 text-[#6B6B6B] hover:text-[#4A4A4A]">
             <ArrowLeft className="w-6 h-6" />
           </Link>
-          <h1 className="text-lg font-bold text-foreground">创建档案</h1>
+          <h1 className="text-lg font-bold text-[#4A4A4A]">创建档案</h1>
         </div>
       </header>
 
-      {/* Form */}
+      {/* Main Content */}
       <main className="max-w-2xl mx-auto px-4 py-6">
-        <form onSubmit={handleSubmit} className="space-y-6">
-          {/* Profile Name */}
+        <div className="bg-white rounded-2xl p-6 shadow-sm space-y-6">
+          {/* 档案名称 */}
           <div>
-            <label className="block text-sm font-medium text-foreground mb-2">
+            <label className="block text-sm font-medium text-[#4A4A4A] mb-2">
               档案名称（可选）
             </label>
             <input
               type="text"
               value={name}
               onChange={(e) => setName(e.target.value)}
-              placeholder="如：小明 & 小红"
-              className="w-full px-4 py-3 bg-card rounded-xl border border-border focus:border-primary focus:outline-none transition-colors"
+              placeholder="例如：田 & 1"
+              className="w-full px-4 py-3 rounded-xl border border-[#D9D4CC] focus:border-[#7A9B76] focus:outline-none transition-colors"
             />
-            <p className="text-xs text-muted-foreground mt-1">
-              不填写则自动生成
-            </p>
           </div>
 
-          {/* Your Name */}
+          {/* 你的名字 */}
           <div>
-            <label className="block text-sm font-medium text-foreground mb-2">
-              你的名字 <span className="text-destructive">*</span>
+            <label className="block text-sm font-medium text-[#4A4A4A] mb-2">
+              你的名字 <span className="text-[#C75B5B]">*</span>
             </label>
             <input
               type="text"
               value={fromName}
               onChange={(e) => setFromName(e.target.value)}
-              placeholder="填表人"
-              required
-              className="w-full px-4 py-3 bg-card rounded-xl border border-border focus:border-primary focus:outline-none transition-colors"
+              placeholder="例如：田"
+              className="w-full px-4 py-3 rounded-xl border border-[#D9D4CC] focus:border-[#7A9B76] focus:outline-none transition-colors"
             />
           </div>
 
-          {/* Partner's Name */}
+          {/* 对方名字 */}
           <div>
-            <label className="block text-sm font-medium text-foreground mb-2">
-              对方名字 <span className="text-destructive">*</span>
+            <label className="block text-sm font-medium text-[#4A4A4A] mb-2">
+              对方名字 <span className="text-[#C75B5B]">*</span>
             </label>
             <input
               type="text"
               value={toName}
               onChange={(e) => setToName(e.target.value)}
-              placeholder="这段关系指向谁？"
-              required
-              className="w-full px-4 py-3 bg-card rounded-xl border border-border focus:border-primary focus:outline-none transition-colors"
+              placeholder="例如：1"
+              className="w-full px-4 py-3 rounded-xl border border-[#D9D4CC] focus:border-[#7A9B76] focus:outline-none transition-colors"
             />
           </div>
 
-          {/* Relationship Label */}
+          {/* 关系标签 */}
           <div>
-            <label className="block text-sm font-medium text-foreground mb-2">
-              关系标签
+            <label className="block text-sm font-medium text-[#4A4A4A] mb-2">
+              关系标签 <span className="text-[#C75B5B]">*</span>
             </label>
-            <div className="flex flex-wrap gap-2">
+            <select
+              value={relationLabel}
+              onChange={(e) => setRelationLabel(e.target.value)}
+              className="w-full px-4 py-3 rounded-xl border border-[#D9D4CC] focus:border-[#7A9B76] focus:outline-none transition-colors bg-white"
+            >
+              <option value="">选择标签</option>
               {RELATION_LABELS.map((label) => (
-                <button
-                  key={label.value}
-                  type="button"
-                  onClick={() => {
-                    if (label.value === '其他') {
-                      setIsCustomLabel(true);
-                    } else {
-                      setIsCustomLabel(false);
-                      setRelationLabel(label.value);
-                    }
-                  }}
-                  className={cn(
-                    'px-4 py-2 rounded-full text-sm transition-colors',
-                    !isCustomLabel && relationLabel === label.value
-                      ? 'bg-primary text-primary-foreground'
-                      : 'bg-card text-foreground border border-border hover:border-primary'
-                  )}
-                >
+                <option key={label.value} value={label.value}>
                   {label.label}
-                </button>
+                </option>
               ))}
-            </div>
-            {isCustomLabel && (
-              <input
-                type="text"
-                value={customLabel}
-                onChange={(e) => setCustomLabel(e.target.value)}
-                placeholder="输入自定义标签"
-                className="w-full mt-2 px-4 py-3 bg-card rounded-xl border border-border focus:border-primary focus:outline-none transition-colors"
-              />
-            )}
+            </select>
           </div>
+        </div>
 
-          {/* Submit */}
-          <button
-            type="submit"
-            disabled={!fromName || !toName}
-            className={cn(
-              'w-full py-4 rounded-2xl font-medium text-primary-foreground transition-all',
-              fromName && toName
-                ? 'bg-primary hover:bg-primary/90'
-                : 'bg-muted cursor-not-allowed'
-            )}
-          >
-            创建
-          </button>
-        </form>
+        {/* Create Button */}
+        <button
+          onClick={handleCreate}
+          disabled={!fromName || !toName || !relationLabel}
+          className={cn(
+            'w-full mt-6 py-4 rounded-2xl font-medium text-white transition-all',
+            fromName && toName && relationLabel
+              ? 'bg-[#7A9B76] hover:bg-[#5A7B56]'
+              : 'bg-[#C5BEB3] cursor-not-allowed'
+          )}
+        >
+          创建档案
+        </button>
       </main>
 
       <BottomNav />
     </div>
+  );
+}
+
+export default function NewProfilePage() {
+  return (
+    <Suspense fallback={<div className="min-h-screen bg-[#F5F1EB] flex items-center justify-center">加载中...</div>}>
+      <NewProfileContent />
+    </Suspense>
   );
 }
