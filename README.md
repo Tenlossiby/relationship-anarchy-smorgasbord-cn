@@ -4,9 +4,7 @@
 
 一个多元包容的关系探索工具，帮助你和伙伴发现和记录动态的关系模式。
 
-[🚀 在线演示](https://relationship-anarchy-smorgasbord-cn.netlify.app/) · [GitHub](https://github.com/Tenlossiby/relationship-anarchy-smorgasbord-cn) · [功能特性](#功能特性) · [使用指南](#使用指南)
-
-[English](./README_EN.md) | 简体中文
+[🚀 在线演示](https://relationship-anarchy-smorgasbord-cn.netlify.app/) · [GitHub](https://github.com/Tenlossiby/relationship-anarchy-smorgasbord-cn) · [功能特性](#%E5%8A%9F%E8%83%BD%E7%89%B9%E6%80%A7) · [使用指南](#%E4%BD%BF%E7%94%A8%E6%8C%87%E5%8D%97)
 
 </div>
 
@@ -31,6 +29,8 @@
 
 ---
 
+
+<a id="功能特性"></a>
 
 ## ✨ 功能特性
 
@@ -94,6 +94,8 @@
 ---
 
 
+<a id="使用指南"></a>
+
 ## 🚀 使用指南
 
 ### 在线访问
@@ -149,7 +151,7 @@
 
 1. 填写**你的名字**（例如：张三）
 2. 填写**对方名字**（例如：李四）
-3. 选择**关系标签**（例如：伴侣、朋友、家人等，或自定义）
+3. 选择**关系标签**（例如：伴侣、朋友、QPR、选择性家人等，或自定义）
 
 **提示**：
 - 档案名称可以不填，系统会自动生成"张三 & 李四"
@@ -356,17 +358,6 @@ ra-smorgasbord/
 │   └── USER-FLOW.md      # 用户交互流程文档
 └── README.md            # 项目说明
 ```
-
----
-
-## 🎨 界面预览
-
-> 这里可以添加项目的截图，展示主要功能界面
->
-> - 首页类别选择
-> - 卡牌讨论页面
-> - 档案详情页
-> - 档案对比页
 
 ---
 
