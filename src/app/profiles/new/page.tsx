@@ -20,9 +20,12 @@ function NewProfileContent() {
   const [fromName, setFromName] = useState('');
   const [toName, setToName] = useState('');
   const [relationLabel, setRelationLabel] = useState('');
+  const [customLabel, setCustomLabel] = useState('');
 
   const handleCreate = () => {
-    if (!fromName || !toName || !relationLabel) {
+    const finalLabel = relationLabel === '其他' ? customLabel || relationLabel : relationLabel;
+
+    if (!fromName || !toName || !finalLabel) {
       alert('请填写所有必填字段');
       return;
     }
@@ -31,7 +34,7 @@ function NewProfileContent() {
       name || `${fromName} & ${toName}`,
       fromName,
       toName,
-      relationLabel
+      finalLabel
     );
 
     if (categories.length > 0) {
@@ -115,6 +118,19 @@ function NewProfileContent() {
                 </option>
               ))}
             </select>
+
+            {/* 自定义标签输入框 */}
+            {relationLabel === '其他' && (
+              <div className="mt-2">
+                <input
+                  type="text"
+                  value={customLabel}
+                  onChange={(e) => setCustomLabel(e.target.value)}
+                  placeholder="请输入自定义标签（可选）"
+                  className="w-full px-4 py-3 rounded-xl border border-[#D9D4CC] focus:border-[#7A9B76] focus:outline-none transition-colors"
+                />
+              </div>
+            )}
           </div>
         </div>
 

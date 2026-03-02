@@ -102,5 +102,5 @@ export const RELATION_LABELS = [
   { value: '约会对象', label: '约会对象' },
   { value: '室友', label: '室友' },
   { value: '合作伙伴', label: '合作伙伴' },
-  { value: '其他', label: '其他' },
+  { value: '其他', label: '其ta' },
 ];
