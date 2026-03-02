@@ -9,7 +9,7 @@
 </div>
 
 <p align="center">
-  <strong>作者：</strong> Tenlossiby
+  <strong> Web APP 作者：</strong> Tenlossiby
 </p>
 
 ---
