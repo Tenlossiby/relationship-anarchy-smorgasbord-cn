@@ -8,7 +8,7 @@ import { cn } from '@/lib/utils';
 export function LanguageToggle() {
   const { isTraditional, toggleLocale, t } = useLanguage();
   const pathname = usePathname();
-  const target = isTraditional ? '简体中文' : '繁體中文（台灣）';
+  const target = isTraditional ? '简体中文' : '繁體中文';
   const isCardPage = /^\/explore\/[^/]+\/[^/]+/.test(pathname);
 
   return (

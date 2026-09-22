@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, Suspense } from 'react';
+import { Suspense } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
 import Link from 'next/link';
 import { ArrowLeft } from 'lucide-react';
@@ -10,6 +10,15 @@ import { BottomNav } from '@/components/BottomNav';
 import { cn } from '@/lib/utils';
 import { useLanguage } from '@/context/LanguageContext';
 import { LocalizedLoading } from '@/components/LocalizedLoading';
+import { useSessionState } from '@/hooks/useSessionState';
+
+const emptyProfileDraft = {
+  name: '',
+  fromName: '',
+  toName: '',
+  relationLabel: '',
+  customLabel: '',
+};
 
 function NewProfileContent() {
   const router = useRouter();
@@ -19,11 +28,8 @@ function NewProfileContent() {
 
   const categories = searchParams.get('categories')?.split(',').filter(Boolean) || [];
 
-  const [name, setName] = useState('');
-  const [fromName, setFromName] = useState('');
-  const [toName, setToName] = useState('');
-  const [relationLabel, setRelationLabel] = useState('');
-  const [customLabel, setCustomLabel] = useState('');
+  const [draft, setDraft, clearDraft] = useSessionState('ra_new_profile_draft', emptyProfileDraft);
+  const { name, fromName, toName, relationLabel, customLabel } = draft;
 
   const handleCreate = () => {
     const finalLabel = relationLabel === '其他' ? customLabel || relationLabel : relationLabel;
@@ -39,6 +45,7 @@ function NewProfileContent() {
       toName,
       finalLabel
     );
+    clearDraft();
 
     if (categories.length > 0) {
       router.push(`/explore/${profile.id}/${categories[0]}?categories=${categories.join(',')}`);
@@ -70,7 +77,7 @@ function NewProfileContent() {
             <input
               type="text"
               value={name}
-              onChange={(e) => setName(e.target.value)}
+              onChange={(e) => setDraft(current => ({ ...current, name: e.target.value }))}
               placeholder={t('例如：小明 & 小红')}
               className="w-full px-4 py-3 rounded-xl border border-[#D9D4CC] focus:border-[#7A9B76] focus:outline-none transition-colors"
             />
@@ -84,7 +91,7 @@ function NewProfileContent() {
             <input
               type="text"
               value={fromName}
-              onChange={(e) => setFromName(e.target.value)}
+              onChange={(e) => setDraft(current => ({ ...current, fromName: e.target.value }))}
               placeholder={t('例如：小明')}
               className="w-full px-4 py-3 rounded-xl border border-[#D9D4CC] focus:border-[#7A9B76] focus:outline-none transition-colors"
             />
@@ -98,7 +105,7 @@ function NewProfileContent() {
             <input
               type="text"
               value={toName}
-              onChange={(e) => setToName(e.target.value)}
+              onChange={(e) => setDraft(current => ({ ...current, toName: e.target.value }))}
               placeholder={t('例如：小红')}
               className="w-full px-4 py-3 rounded-xl border border-[#D9D4CC] focus:border-[#7A9B76] focus:outline-none transition-colors"
             />
@@ -111,7 +118,7 @@ function NewProfileContent() {
             </label>
             <select
               value={relationLabel}
-              onChange={(e) => setRelationLabel(e.target.value)}
+              onChange={(e) => setDraft(current => ({ ...current, relationLabel: e.target.value }))}
               className="w-full px-4 py-3 rounded-xl border border-[#D9D4CC] focus:border-[#7A9B76] focus:outline-none transition-colors bg-white"
             >
               <option value="">{t('选择标签')}</option>
@@ -128,7 +135,7 @@ function NewProfileContent() {
                 <input
                   type="text"
                   value={customLabel}
-                  onChange={(e) => setCustomLabel(e.target.value)}
+                  onChange={(e) => setDraft(current => ({ ...current, customLabel: e.target.value }))}
                   placeholder={t('请输入自定义标签（可选）')}
                   className="w-full px-4 py-3 rounded-xl border border-[#D9D4CC] focus:border-[#7A9B76] focus:outline-none transition-colors"
                 />

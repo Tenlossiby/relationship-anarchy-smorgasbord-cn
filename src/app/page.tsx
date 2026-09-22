@@ -7,7 +7,6 @@
 
 'use client';
 
-import { useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { Shuffle, Sparkles, ArrowRight } from 'lucide-react';
 import { CATEGORIES, getTotalCards } from '@/data/categories';
@@ -15,12 +14,13 @@ import { BottomNav } from '@/components/BottomNav';
 import { useApp } from '@/context/AppContext';
 import { cn } from '@/lib/utils';
 import { useLanguage } from '@/context/LanguageContext';
+import { useSessionState } from '@/hooks/useSessionState';
 
 export default function HomePage() {
   const router = useRouter();
   const { profiles } = useApp();
   const { t, tc } = useLanguage();
-  const [selectedCategories, setSelectedCategories] = useState<string[]>([]);
+  const [selectedCategories, setSelectedCategories] = useSessionState<string[]>('ra_explore_selected_categories', []);
 
   const toggleCategory = (categoryId: string) => {
     setSelectedCategories(prev => {

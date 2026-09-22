@@ -10,6 +10,7 @@ import { parseLegacyExpoExport, parseLegacyV1Export } from '@/lib/legacyMigratio
 import { BottomNav } from '@/components/BottomNav';
 import { cn } from '@/lib/utils';
 import { useLanguage } from '@/context/LanguageContext';
+import { useSessionState } from '@/hooks/useSessionState';
 
 export default function ImportProfilePage() {
   const router = useRouter();
@@ -17,21 +18,29 @@ export default function ImportProfilePage() {
   const { t, perspective } = useLanguage();
   const fileInputRef = useRef<HTMLInputElement>(null);
 
-  const [importMode, setImportMode] = useState<'clipboard' | 'file'>('clipboard');
-  const [clipboardText, setClipboardText] = useState('');
+  const [importDraft, setImportDraft, clearImportDraft] = useSessionState<{
+    importMode: 'clipboard' | 'file';
+    clipboardText: string;
+    legacyAuthor: string;
+    legacySubject: string;
+  }>('ra_import_profile_draft', {
+    importMode: 'clipboard',
+    clipboardText: '',
+    legacyAuthor: '',
+    legacySubject: '',
+  });
+  const { importMode, clipboardText, legacyAuthor, legacySubject } = importDraft;
   const [importStatus, setImportStatus] = useState<'idle' | 'success' | 'error'>('idle');
   const [errorMessage, setErrorMessage] = useState('');
   const [preview, setPreview] = useState<{ direction: string; title: string; includesNotes: boolean } | null>(null);
   const [pendingImportText, setPendingImportText] = useState<string | null>(null);
   const [legacyText, setLegacyText] = useState<string | null>(null);
-  const [legacyAuthor, setLegacyAuthor] = useState('');
-  const [legacySubject, setLegacySubject] = useState('');
   const [legacyPreview, setLegacyPreview] = useState<{ sourceProfileId: string; itemCount: number } | null>(null);
 
   const handlePasteFromClipboard = async () => {
     try {
       const text = await navigator.clipboard.readText();
-      setClipboardText(text);
+      setImportDraft(current => ({ ...current, clipboardText: text }));
     } catch {
       setErrorMessage(t('无法读取剪贴板，请手动粘贴'));
     }
@@ -80,6 +89,7 @@ export default function ImportProfilePage() {
     if (!pendingImportText) return;
     const profile = importProfile(pendingImportText);
     if (profile) {
+      clearImportDraft();
       setImportStatus('success');
       setTimeout(() => {
         router.push(`/profiles/${profile.id}`);
@@ -102,7 +112,7 @@ export default function ImportProfilePage() {
   const handleConfirmLegacyImport = () => {
     if (!legacyText || !legacyPreview) return;
     const profile = importLegacyProfile(legacyText, legacyAuthor, legacySubject);
-    if (profile) { setImportStatus('success'); setTimeout(() => router.push(`/profiles/${profile.id}`), 500); }
+    if (profile) { clearImportDraft(); setImportStatus('success'); setTimeout(() => router.push(`/profiles/${profile.id}`), 500); }
     else { setErrorMessage(t('旧档案无法读取，请保留原文件并检查格式。')); setImportStatus('error'); }
   };
 
@@ -113,8 +123,7 @@ export default function ImportProfilePage() {
     const reader = new FileReader();
     reader.onload = (event) => {
       const text = event.target?.result as string;
-      setClipboardText(text);
-      setImportMode('clipboard');
+      setImportDraft(current => ({ ...current, clipboardText: text, importMode: 'clipboard' }));
     };
     reader.readAsText(file);
   };
@@ -136,7 +145,7 @@ export default function ImportProfilePage() {
         {/* Mode Tabs */}
         <div className="flex gap-2 mb-6">
           <button
-            onClick={() => setImportMode('clipboard')}
+            onClick={() => setImportDraft(current => ({ ...current, importMode: 'clipboard' }))}
             className={cn(
               'flex-1 flex items-center justify-center gap-2 py-3 rounded-xl font-medium transition-colors',
               importMode === 'clipboard'
@@ -148,7 +157,7 @@ export default function ImportProfilePage() {
             <span>{t('从剪贴板')}</span>
           </button>
           <button
-            onClick={() => setImportMode('file')}
+            onClick={() => setImportDraft(current => ({ ...current, importMode: 'file' }))}
             className={cn(
               'flex-1 flex items-center justify-center gap-2 py-3 rounded-xl font-medium transition-colors',
               importMode === 'file'
@@ -175,7 +184,7 @@ export default function ImportProfilePage() {
             {/* Text Area */}
             <textarea
               value={clipboardText}
-              onChange={(e) => setClipboardText(e.target.value)}
+              onChange={(e) => setImportDraft(current => ({ ...current, clipboardText: e.target.value }))}
               placeholder={t('粘贴档案口令...\n\n格式示例：\n---RAS_DATA_START---\neyJwYXJ0bmVyTmFtZSI6Iu...\n---RAS_DATA_END---')}
               className="w-full h-64 px-4 py-3 bg-white rounded-xl border border-[#D9D4CC] focus:border-[#7A9B76] focus:outline-none transition-colors resize-none text-sm"
             />
@@ -245,7 +254,7 @@ export default function ImportProfilePage() {
           </ul>
         </div>
         {preview && <div className="mt-4 p-4 bg-white rounded-xl border border-[#7A9B76]/30 text-sm text-[#4A4A4A] space-y-3"><p className="font-medium">{t('导入预览')}：{preview.title}</p><p className="mt-1">{t('填写视角')}：{preview.direction}</p><p className="mt-1">{t('包含备注')}：{preview.includesNotes ? t('是') : t('否')}</p><button onClick={handleConfirmImport} className="w-full py-3 rounded-xl bg-[#7A9B76] text-white font-medium">{t('确认并写入只读档案')}</button></div>}
-        {legacyText && <div className="mt-4 p-4 bg-white rounded-xl border border-[#D4A84B]/40 text-sm text-[#4A4A4A] space-y-3"><p className="font-medium">{t('这份旧档案需要你确认填写视角')}</p><p>{t('旧文件没有完整记录这层信息，请手动补上：')}</p><input value={legacyAuthor} onChange={event => { setLegacyAuthor(event.target.value); setLegacyPreview(null); }} placeholder={t('谁填写了这份档案？')} className="w-full px-3 py-2 rounded-lg border border-[#D9D4CC]" /><input value={legacySubject} onChange={event => { setLegacySubject(event.target.value); setLegacyPreview(null); }} placeholder={t('填写的是与谁的关系？')} className="w-full px-3 py-2 rounded-lg border border-[#D9D4CC]" /><button onClick={handleLegacyPreview} className="w-full py-3 rounded-xl bg-[#D4A84B] text-white font-medium">{t('查看旧档案预览')}</button>{legacyPreview && <div className="space-y-2 rounded-lg bg-[#F5F1EB] p-3"><p>{t('来源档案')}：{legacyPreview.sourceProfileId}</p><p>{t('发现条目')}：{legacyPreview.itemCount} {t('条')}</p><button onClick={handleConfirmLegacyImport} className="w-full py-3 rounded-xl bg-[#7A9B76] text-white font-medium">{t('确认并导入只读档案')}</button></div>}</div>}
+        {legacyText && <div className="mt-4 p-4 bg-white rounded-xl border border-[#D4A84B]/40 text-sm text-[#4A4A4A] space-y-3"><p className="font-medium">{t('这份旧档案需要你确认填写视角')}</p><p>{t('旧文件没有完整记录这层信息，请手动补上：')}</p><input value={legacyAuthor} onChange={event => { setImportDraft(current => ({ ...current, legacyAuthor: event.target.value })); setLegacyPreview(null); }} placeholder={t('谁填写了这份档案？')} className="w-full px-3 py-2 rounded-lg border border-[#D9D4CC]" /><input value={legacySubject} onChange={event => { setImportDraft(current => ({ ...current, legacySubject: event.target.value })); setLegacyPreview(null); }} placeholder={t('填写的是与谁的关系？')} className="w-full px-3 py-2 rounded-lg border border-[#D9D4CC]" /><button onClick={handleLegacyPreview} className="w-full py-3 rounded-xl bg-[#D4A84B] text-white font-medium">{t('查看旧档案预览')}</button>{legacyPreview && <div className="space-y-2 rounded-lg bg-[#F5F1EB] p-3"><p>{t('来源档案')}：{legacyPreview.sourceProfileId}</p><p>{t('发现条目')}：{legacyPreview.itemCount} {t('条')}</p><button onClick={handleConfirmLegacyImport} className="w-full py-3 rounded-xl bg-[#7A9B76] text-white font-medium">{t('确认并导入只读档案')}</button></div>}</div>}
       </main>
 
       <BottomNav />

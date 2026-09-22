@@ -7,14 +7,23 @@
 
 'use client';
 
-import { ExternalLink, Download } from 'lucide-react';
+import { ExternalLink, Download, Monitor, Moon, SlidersHorizontal, Sun } from 'lucide-react';
 import { BottomNav } from '@/components/BottomNav';
 import { useEffect, useState } from 'react';
 import { RECOVERY_KEY } from '@/lib/storageV2';
 import { useLanguage } from '@/context/LanguageContext';
+import { useTheme } from '@/context/ThemeContext';
+import { cn } from '@/lib/utils';
+
+const themeOptions = [
+  { value: 'light', label: '浅色', icon: Sun },
+  { value: 'dark', label: '深色', icon: Moon },
+  { value: 'system', label: '跟随系统', icon: Monitor },
+] as const;
 
 export default function SettingsPage() {
-  const { t } = useLanguage();
+  const { t, locale, setLocale } = useLanguage();
+  const { theme, setTheme } = useTheme();
   const [recoveryData, setRecoveryData] = useState<string | null>(null);
 
   useEffect(() => {
@@ -57,6 +66,62 @@ export default function SettingsPage() {
             <button onClick={handleDownloadRecovery} className="mt-3 px-4 py-2 rounded-xl bg-[#D4A84B] text-white text-sm font-medium">{t('下载恢复数据')}</button>
           </section>
         )}
+
+        {/* Compact display preferences */}
+        <section className="mb-4 flex flex-wrap items-center justify-between gap-3 rounded-2xl bg-card px-4 py-3 shadow-sm">
+          <h2 className="flex items-center gap-2 text-sm font-medium text-card-foreground">
+            <SlidersHorizontal className="h-4 w-4 text-muted-foreground" />
+            {t('显示')}
+          </h2>
+
+          <div className="flex items-center gap-2">
+            <div className="flex rounded-lg bg-secondary p-0.5" aria-label={t('语言')}>
+              {([
+                { value: 'zh-CN', label: '简体中文' },
+                { value: 'zh-TW', label: '繁體中文' },
+              ] as const).map((option) => (
+                <button
+                  key={option.value}
+                  type="button"
+                  onClick={() => setLocale(option.value)}
+                  aria-pressed={locale === option.value}
+                  className={cn(
+                    'flex items-center gap-1 rounded-md px-2 py-1.5 text-xs transition-colors',
+                    locale === option.value
+                      ? 'bg-card font-medium text-card-foreground shadow-sm'
+                      : 'text-muted-foreground hover:text-foreground'
+                  )}
+                >
+                  {option.label}
+                </button>
+              ))}
+            </div>
+
+            <div className="flex rounded-lg bg-secondary p-0.5" aria-label={t('主题')}>
+              {themeOptions.map((option) => {
+                const Icon = option.icon;
+                return (
+                  <button
+                    key={option.value}
+                    type="button"
+                    onClick={() => setTheme(option.value)}
+                    aria-label={t(option.label)}
+                    title={t(option.label)}
+                    aria-pressed={theme === option.value}
+                    className={cn(
+                      'flex h-7 w-7 items-center justify-center rounded-md transition-colors',
+                      theme === option.value
+                        ? 'bg-card text-card-foreground shadow-sm'
+                        : 'text-muted-foreground hover:text-foreground'
+                    )}
+                  >
+                    <Icon className="h-3.5 w-3.5" />
+                  </button>
+                );
+              })}
+            </div>
+          </div>
+        </section>
 
         {/* About Section */}
         <section className="bg-card rounded-2xl p-5 mb-6 shadow-sm">
