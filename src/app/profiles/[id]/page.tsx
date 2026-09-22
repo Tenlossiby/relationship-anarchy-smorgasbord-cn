@@ -8,12 +8,14 @@ import { CATEGORIES, getTotalCards } from '@/data/categories';
 import { exportProfileToText, generateShareCode } from '@/lib/storageV2';
 import { BottomNav } from '@/components/BottomNav';
 import { STATUS_LABELS, type CardAnswerV2 } from '@/types';
-import { describePerspective, getAnswerStatuses, isAnswerEffective } from '@/lib/domain';
+import { getAnswerStatuses, isAnswerEffective } from '@/lib/domain';
+import { useLanguage } from '@/context/LanguageContext';
 
 export default function ProfileDetailPage() {
   const router = useRouter();
   const params = useParams();
   const { profiles, createProfileCopy } = useApp();
+  const { t, tc, perspective, relation, locale } = useLanguage();
   const profileId = params.id as string;
 
   const profile = profiles.find(p => p.id === profileId);
@@ -23,7 +25,7 @@ export default function ProfileDetailPage() {
   if (!profile) {
     return (
       <div className="min-h-screen bg-[#F5F1EB] flex items-center justify-center">
-        <p className="text-[#6B6B6B]">档案不存在</p>
+        <p className="text-[#6B6B6B]">{t('档案不存在')}</p>
       </div>
     );
   }
@@ -32,7 +34,7 @@ export default function ProfileDetailPage() {
   const progressPercent = Math.round((completedCards / totalCards) * 100);
 
   const handleExport = () => {
-    const text = exportProfileToText(profile);
+    const text = exportProfileToText(profile, true, locale);
     const blob = new Blob([text], { type: 'text/plain;charset=utf-8' });
     const url = URL.createObjectURL(blob);
     const a = document.createElement('a');
@@ -43,10 +45,10 @@ export default function ProfileDetailPage() {
   };
 
   const handleShare = async () => {
-    const shareText = generateShareCode(profile);
+    const shareText = generateShareCode(profile, locale);
     try {
       await navigator.clipboard.writeText(shareText);
-      alert('档案口令已复制到剪贴板！');
+      alert(t('档案口令已复制到剪贴板！'));
     } catch {
       // Fallback
       const textarea = document.createElement('textarea');
@@ -55,7 +57,7 @@ export default function ProfileDetailPage() {
       textarea.select();
       document.execCommand('copy');
       document.body.removeChild(textarea);
-      alert('档案口令已复制到剪贴板！');
+      alert(t('档案口令已复制到剪贴板！'));
     }
   };
 
@@ -110,7 +112,7 @@ export default function ProfileDetailPage() {
             >
               <ArrowLeft className="w-6 h-6" />
             </Link>
-            <h1 className="text-lg font-bold text-[#4A4A4A]">档案详情</h1>
+            <h1 className="text-lg font-bold text-[#4A4A4A]">{t('档案详情')}</h1>
           </div>
         </div>
       </header>
@@ -122,21 +124,21 @@ export default function ProfileDetailPage() {
           <h2 className="text-xl font-bold text-[#4A4A4A] mb-4">{profile.title}</h2>
           <div className="space-y-2 text-sm">
             <div className="rounded-xl bg-[#F5F1EB] px-3 py-2 text-[#4A4A4A]">
-              {describePerspective(profile.direction.author.displayName, profile.direction.subject.displayName)}
+              {perspective(profile.direction.author.displayName, profile.direction.subject.displayName)}
             </div>
             <div className="flex justify-between">
-              <span className="text-[#6B6B6B]">关系标签</span>
-                <span className="text-[#4A4A4A] font-medium">{profile.relationLabels.join('、') || '未设置'}</span>
+              <span className="text-[#6B6B6B]">{t('关系标签')}</span>
+                <span className="text-[#4A4A4A] font-medium">{profile.relationLabels.map(relation).join('、') || t('未设置')}</span>
             </div>
             <div className="flex justify-between">
-              <span className="text-[#6B6B6B]">创建时间</span>
+              <span className="text-[#6B6B6B]">{t('创建时间')}</span>
               <span className="text-[#4A4A4A]">
                 {new Date(profile.createdAt).toLocaleDateString('zh-CN')}
               </span>
             </div>
             {profile.provenance.kind === 'imported' && (
               <div className="flex justify-between">
-                <span className="text-[#6B6B6B]">导入来源</span>
+                <span className="text-[#6B6B6B]">{t('导入来源')}</span>
                 <span className="text-[#5B8DBE]">📥 {profile.provenance.sourceProfileId}</span>
               </div>
             )}
@@ -145,7 +147,7 @@ export default function ProfileDetailPage() {
           {/* Progress Bar */}
           <div className="mt-4 pt-4 border-t border-[#E8E2DA]">
             <div className="flex justify-between text-sm mb-2">
-              <span className="text-[#6B6B6B]">探索进度</span>
+              <span className="text-[#6B6B6B]">{t('探索进度')}</span>
               <span className="text-[#7A9B76] font-medium">{completedCards}/{totalCards}</span>
             </div>
             <div className="h-3 bg-[#E8E2DA] rounded-full overflow-hidden">
@@ -164,22 +166,22 @@ export default function ProfileDetailPage() {
             className="flex-1 flex items-center justify-center gap-2 py-3 bg-white rounded-xl border border-[#D9D4CC] text-[#4A4A4A] hover:border-[#7A9B76] transition-colors"
           >
             <Download className="w-5 h-5" />
-            <span>导出 TXT</span>
+            <span>{t('导出 TXT')}</span>
           </button>
           <button
             onClick={handleShare}
             className="flex-1 flex items-center justify-center gap-2 py-3 bg-white rounded-xl border border-[#D9D4CC] text-[#4A4A4A] hover:border-[#7A9B76] transition-colors"
           >
             <Share2 className="w-5 h-5" />
-            <span>分享口令</span>
+            <span>{t('分享口令')}</span>
           </button>
         </div>
-        {!profile.permissions.editable && <button onClick={handleCreateCopy} className="w-full mb-6 py-3 bg-[#7A9B76] text-white rounded-xl font-medium">基于此档案创建可编辑副本</button>}
+        {!profile.permissions.editable && <button onClick={handleCreateCopy} className="w-full mb-6 py-3 bg-[#7A9B76] text-white rounded-xl font-medium">{t('基于此档案创建可编辑副本')}</button>}
 
         {/* Completed Answers Comparison */}
         {completedAnswers.length > 0 ? (
           <div className="mb-6">
-            <h3 className="text-sm font-medium text-[#6B6B6B] mb-3">已填项目</h3>
+            <h3 className="text-sm font-medium text-[#6B6B6B] mb-3">{t('已填项目')}</h3>
             <div className="space-y-3">
               {completedAnswers.map((answer) => (
                 <div
@@ -189,15 +191,15 @@ export default function ProfileDetailPage() {
                   <div className="flex items-start gap-2 mb-2">
                     <span className="text-lg">{answer.category.icon}</span>
                     <div className="flex-1">
-                      <div className="text-xs text-[#6B6B6B] mb-1">{answer.category.zh}</div>
-                      <div className="text-sm font-medium text-[#4A4A4A]">{answer.card.zh}</div>
+                      <div className="text-xs text-[#6B6B6B] mb-1">{tc(answer.category).zh}</div>
+                      <div className="text-sm font-medium text-[#4A4A4A]">{tc(answer.category).cards.find(card => card.id === answer.card.id)?.zh || answer.card.zh}</div>
                     </div>
                   </div>
                   {(getAnswerStatuses(answer.answer).length || answer.answer.participation || answer.answer.legacy?.needsReview) && (
                     <div className="flex flex-wrap gap-2 mt-2">
-                      {getAnswerStatuses(answer.answer).map(status => <span key={status} className="px-3 py-1 rounded-full text-xs text-white" style={{ backgroundColor: STATUS_LABELS[status].color }}>{STATUS_LABELS[status].zh}</span>)}
-                      {answer.answer.participation && <span className="px-3 py-1 rounded-full text-xs bg-[#E8F0F8] text-[#4A4A4A]">{({ self: '我会参与', other: '对方会参与', together: '共同参与', varies: '视情况而定' } as const)[answer.answer.participation]}</span>}
-                      {answer.answer.legacy?.needsReview && <span className="px-3 py-1 rounded-full text-xs bg-[#F7E7C6] text-[#8A641D]">旧状态需要复核</span>}
+                      {getAnswerStatuses(answer.answer).map(status => <span key={status} className="px-3 py-1 rounded-full text-xs text-white" style={{ backgroundColor: STATUS_LABELS[status].color }}>{t(STATUS_LABELS[status].zh)}</span>)}
+                      {answer.answer.participation && <span className="px-3 py-1 rounded-full text-xs bg-[#E8F0F8] text-[#4A4A4A]">{t(({ self: '我会参与', other: '对方会参与', together: '共同参与', varies: '视情况而定' } as const)[answer.answer.participation])}</span>}
+                      {answer.answer.legacy?.needsReview && <span className="px-3 py-1 rounded-full text-xs bg-[#F7E7C6] text-[#8A641D]">{t('旧状态需要复核')}</span>}
                     </div>
                   )}
                   {answer.answer.note && (
@@ -219,7 +221,7 @@ export default function ProfileDetailPage() {
               className="flex items-center justify-center gap-2 w-full py-4 bg-[#7A9B76] text-white rounded-2xl font-medium hover:bg-[#5A7B56] transition-colors"
             >
               <Play className="w-5 h-5" />
-              <span>继续探索</span>
+              <span>{t('继续探索')}</span>
             </Link>
           </div>
         )}

@@ -8,11 +8,14 @@ import { useApp } from '@/context/AppContext';
 import { RELATION_LABELS } from '@/types';
 import { BottomNav } from '@/components/BottomNav';
 import { cn } from '@/lib/utils';
+import { useLanguage } from '@/context/LanguageContext';
+import { LocalizedLoading } from '@/components/LocalizedLoading';
 
 function NewProfileContent() {
   const router = useRouter();
   const searchParams = useSearchParams();
   const { createNewProfile } = useApp();
+  const { t } = useLanguage();
 
   const categories = searchParams.get('categories')?.split(',').filter(Boolean) || [];
 
@@ -26,7 +29,7 @@ function NewProfileContent() {
     const finalLabel = relationLabel === '其他' ? customLabel || relationLabel : relationLabel;
 
     if (!fromName || !toName || !finalLabel) {
-      alert('请填写所有必填字段');
+      alert(t('请填写所有必填字段'));
       return;
     }
 
@@ -52,7 +55,7 @@ function NewProfileContent() {
           <Link href="/profiles" className="p-1 text-[#6B6B6B] hover:text-[#4A4A4A]">
             <ArrowLeft className="w-6 h-6" />
           </Link>
-          <h1 className="text-lg font-bold text-[#4A4A4A]">创建档案</h1>
+          <h1 className="text-lg font-bold text-[#4A4A4A]">{t('创建档案')}</h1>
         </div>
       </header>
 
@@ -62,13 +65,13 @@ function NewProfileContent() {
           {/* 档案名称 */}
           <div>
             <label className="block text-sm font-medium text-[#4A4A4A] mb-2">
-              档案名称（可选）
+              {t('档案名称（可选）')}
             </label>
             <input
               type="text"
               value={name}
               onChange={(e) => setName(e.target.value)}
-              placeholder="例如：小明 & 小红"
+              placeholder={t('例如：小明 & 小红')}
               className="w-full px-4 py-3 rounded-xl border border-[#D9D4CC] focus:border-[#7A9B76] focus:outline-none transition-colors"
             />
           </div>
@@ -76,13 +79,13 @@ function NewProfileContent() {
           {/* 你的名字 */}
           <div>
             <label className="block text-sm font-medium text-[#4A4A4A] mb-2">
-              你的名字 <span className="text-[#C75B5B]">*</span>
+              {t('你的名字')} <span className="text-[#C75B5B]">*</span>
             </label>
             <input
               type="text"
               value={fromName}
               onChange={(e) => setFromName(e.target.value)}
-              placeholder="例如：小明"
+              placeholder={t('例如：小明')}
               className="w-full px-4 py-3 rounded-xl border border-[#D9D4CC] focus:border-[#7A9B76] focus:outline-none transition-colors"
             />
           </div>
@@ -90,13 +93,13 @@ function NewProfileContent() {
           {/* 对方名字 */}
           <div>
             <label className="block text-sm font-medium text-[#4A4A4A] mb-2">
-              对方名字 <span className="text-[#C75B5B]">*</span>
+              {t('对方名字')} <span className="text-[#C75B5B]">*</span>
             </label>
             <input
               type="text"
               value={toName}
               onChange={(e) => setToName(e.target.value)}
-              placeholder="例如：1"
+              placeholder={t('例如：小红')}
               className="w-full px-4 py-3 rounded-xl border border-[#D9D4CC] focus:border-[#7A9B76] focus:outline-none transition-colors"
             />
           </div>
@@ -104,17 +107,17 @@ function NewProfileContent() {
           {/* 关系标签 */}
           <div>
             <label className="block text-sm font-medium text-[#4A4A4A] mb-2">
-              关系标签 <span className="text-[#C75B5B]">*</span>
+              {t('关系标签')} <span className="text-[#C75B5B]">*</span>
             </label>
             <select
               value={relationLabel}
               onChange={(e) => setRelationLabel(e.target.value)}
               className="w-full px-4 py-3 rounded-xl border border-[#D9D4CC] focus:border-[#7A9B76] focus:outline-none transition-colors bg-white"
             >
-              <option value="">选择标签</option>
+              <option value="">{t('选择标签')}</option>
               {RELATION_LABELS.map((label) => (
                 <option key={label.value} value={label.value}>
-                  {label.label}
+                  {t(label.label)}
                 </option>
               ))}
             </select>
@@ -126,7 +129,7 @@ function NewProfileContent() {
                   type="text"
                   value={customLabel}
                   onChange={(e) => setCustomLabel(e.target.value)}
-                  placeholder="请输入自定义标签（可选）"
+                  placeholder={t('请输入自定义标签（可选）')}
                   className="w-full px-4 py-3 rounded-xl border border-[#D9D4CC] focus:border-[#7A9B76] focus:outline-none transition-colors"
                 />
               </div>
@@ -145,7 +148,7 @@ function NewProfileContent() {
               : 'bg-[#C5BEB3] cursor-not-allowed'
           )}
         >
-          创建档案
+          {t('创建档案')}
         </button>
       </main>
 
@@ -156,7 +159,7 @@ function NewProfileContent() {
 
 export default function NewProfilePage() {
   return (
-    <Suspense fallback={<div className="min-h-screen bg-[#F5F1EB] flex items-center justify-center">加载中...</div>}>
+    <Suspense fallback={<LocalizedLoading />}>
       <NewProfileContent />
     </Suspense>
   );

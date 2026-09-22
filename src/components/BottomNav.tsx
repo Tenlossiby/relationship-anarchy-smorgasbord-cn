@@ -4,6 +4,7 @@ import Link from 'next/link';
 import { usePathname } from 'next/navigation';
 import { Compass, FolderOpen, Settings } from 'lucide-react';
 import { cn } from '@/lib/utils';
+import { useLanguage } from '@/context/LanguageContext';
 
 const navItems = [
   { href: '/', icon: Compass, label: '探索' },
@@ -13,6 +14,7 @@ const navItems = [
 
 export function BottomNav() {
   const pathname = usePathname();
+  const { t } = useLanguage();
 
   return (
     <nav className="fixed bottom-0 left-0 right-0 z-50 bg-card/90 backdrop-blur-lg border-t border-border safe-bottom">
@@ -36,7 +38,7 @@ export function BottomNav() {
                 'w-5 h-5 transition-transform duration-200',
                 isActive && 'scale-110'
               )} />
-              <span className="text-xs font-medium">{item.label}</span>
+              <span className="text-xs font-medium">{t(item.label)}</span>
             </Link>
           );
         })}

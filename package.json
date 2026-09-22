@@ -1,6 +1,6 @@
 {
   "name": "relationship-anarchy-smorgasbord-cn",
-  "displayName": "关系安那其自助拼盘（中文版）",
+  "displayName": "关系安那其拼盘",
   "description": "一个多元包容的关系探索工具",
   "version": "2.0.0",
   "private": false,
@@ -56,6 +56,7 @@
     "lucide-react": "^0.468.0",
     "next": "16.1.1",
     "next-themes": "^0.4.6",
+    "opencc-js": "^1.4.1",
     "react": "19.2.3",
     "react-day-picker": "^9.13.0",
     "react-dom": "19.2.3",

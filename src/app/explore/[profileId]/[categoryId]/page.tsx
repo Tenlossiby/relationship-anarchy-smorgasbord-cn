@@ -10,12 +10,15 @@ import { STATUS_LABELS, StatusLabel, Participation, Profile } from '@/types';
 import { getAnswerStatuses, SUGGESTED_STATUS_VALUES } from '@/lib/domain';
 import { updateCardAnswer, getAnswer, getProfile, markCardViewed } from '@/lib/storageV2';
 import { cn } from '@/lib/utils';
+import { useLanguage } from '@/context/LanguageContext';
+import { LocalizedLoading } from '@/components/LocalizedLoading';
 
 function CardDiscussionContent() {
   const router = useRouter();
   const params = useParams();
   const searchParams = useSearchParams();
   const { refreshProfiles } = useApp();
+  const { t, tc } = useLanguage();
 
   const profileId = params.profileId as string;
   const categoryId = params.categoryId as string;
@@ -55,15 +58,17 @@ function CardDiscussionContent() {
   if (!profile || !category) {
     return (
       <div className="min-h-screen bg-[#F5F1EB] flex items-center justify-center">
-        <p className="text-[#6B6B6B]">加载中...</p>
+        <p className="text-[#6B6B6B]">{t('加载中...')}</p>
       </div>
     );
   }
 
   const currentCard = category.cards[currentIndex];
+  const localizedCategory = tc(category);
+  const localizedCurrentCard = localizedCategory.cards[currentIndex];
   const totalCards = category.cards.length;
   const isReadOnly = !profile.permissions.editable;
-  const conversationPrompts = [currentCard.prompt, ...(currentCard.reflectionPrompts || [])].filter((prompt): prompt is string => Boolean(prompt));
+  const conversationPrompts = [localizedCurrentCard.prompt, ...(localizedCurrentCard.reflectionPrompts || [])].filter((prompt): prompt is string => Boolean(prompt));
 
   const persistCurrent = () => {
     if (isReadOnly) return;
@@ -160,8 +165,8 @@ function CardDiscussionContent() {
               <ArrowLeft className="w-6 h-6" />
             </Link>
             <div className="flex items-center gap-2">
-              <span className="text-xl">{category.icon}</span>
-              <span className="font-medium text-[#4A4A4A]">{category.zh}</span>
+              <span className="text-xl">{localizedCategory.icon}</span>
+              <span className="font-medium text-[#4A4A4A]">{localizedCategory.zh}</span>
             </div>
             <div className="w-6" /> {/* spacer */}
           </div>
@@ -183,10 +188,10 @@ function CardDiscussionContent() {
         {/* Card */}
         <div className="bg-white rounded-2xl p-6 shadow-sm mb-6">
           <h2 className="text-xl font-medium text-[#4A4A4A] text-center mb-2">
-            {currentCard.zh}
+            {localizedCurrentCard.zh}
           </h2>
           <p className="text-sm text-[#6B6B6B] text-center">
-            {currentCard.en}
+            {localizedCurrentCard.en}
           </p>
 
           {conversationPrompts.length ? (
@@ -220,7 +225,7 @@ function CardDiscussionContent() {
             )}
           >
             <ChevronLeft className="w-4 h-4" />
-            <span>上一张</span>
+            <span>{t('上一张')}</span>
           </button>
           <button
             onClick={goToNext}
@@ -232,20 +237,20 @@ function CardDiscussionContent() {
                 : 'text-[#C5BEB3] cursor-not-allowed'
             )}
           >
-            <span>下一张</span>
+            <span>{t('下一张')}</span>
             <ChevronRight className="w-4 h-4" />
           </button>
         </div>
 
         {/* Suggested marking method from the original translation */}
         <div className="mb-6">
-          <p className="text-sm text-[#6B6B6B] mb-3">建议标记方式（可多选）</p>
+          <p className="text-sm text-[#6B6B6B] mb-3">{t('建议标记方式（可多选）')}</p>
 
           {/* Definition & Communication Hint */}
           <div className="bg-[#E8F2E6] rounded-xl p-4 mb-4 border border-[#7A9B76]/20">
             <p className="text-sm text-[#4A5D4B] leading-relaxed">
-              <span className="font-medium">💡 提示：</span>
-              不同的人对同一个词汇可能有不同的定义。这个工具依赖于你和伙伴之间的互动和沟通，它不会独立于关系而存在。请勇敢地用你自己的理解与伙伴一起讨论，没有标准答案，只有你们共同定义的答案。
+              <span className="font-medium">💡 {t('提示：')}</span>
+              {t('不同的人对同一个词汇可能有不同的定义。这个工具依赖于你和伙伴之间的互动和沟通，它不会独立于关系而存在。请勇敢地用你自己的理解与伙伴一起讨论，没有标准答案，只有你们共同定义的答案。')}
             </p>
           </div>
 
@@ -267,26 +272,26 @@ function CardDiscussionContent() {
                   )}
                   style={isSelected ? { backgroundColor: config.color } : {}}
                 >
-                  <span>{config.zh}</span>
+                  <span>{t(config.zh)}</span>
                   {isSelected && <Check className="w-4 h-4" />}
                 </button>
               );
             })}
           </div>
-          <label className="block text-sm text-[#6B6B6B] mt-5 mb-2" htmlFor="participation">如果需要区分行动者</label>
+          <label className="block text-sm text-[#6B6B6B] mt-5 mb-2" htmlFor="participation">{t('如果需要区分行动者')}</label>
           <select id="participation" disabled={isReadOnly} value={participation || ''} onChange={(event) => setParticipation((event.target.value || undefined) as Participation | undefined)} className="w-full px-4 py-3 rounded-xl bg-white border border-[#D9D4CC] text-sm">
-            <option value="">暂不区分</option><option value="self">主要由我</option><option value="other">主要由对方</option><option value="together">一起</option><option value="varies">视情况而定</option>
+            <option value="">{t('暂不区分')}</option><option value="self">{t('主要由我')}</option><option value="other">{t('主要由对方')}</option><option value="together">{t('一起')}</option><option value="varies">{t('视情况而定')}</option>
           </select>
         </div>
 
         {/* Note Input */}
         <div className="mb-6">
-          <p className="text-sm text-[#6B6B6B] mb-2">备注（可选）</p>
+          <p className="text-sm text-[#6B6B6B] mb-2">{t('备注（可选）')}</p>
           <textarea
             value={note}
             disabled={isReadOnly}
             onChange={(e) => setNote(e.target.value)}
-            placeholder="记录你的想法、偏好或需要讨论的内容..."
+            placeholder={t('记录你的想法、偏好或需要讨论的内容...')}
             className="w-full h-24 px-4 py-3 bg-white rounded-xl border border-[#D9D4CC] focus:border-[#7A9B76] focus:outline-none transition-colors resize-none text-sm"
           />
         </div>
@@ -295,12 +300,12 @@ function CardDiscussionContent() {
       {/* Bottom Actions */}
       <div className="fixed bottom-0 left-0 right-0 bg-gradient-to-t from-[#F5F1EB] via-[#F5F1EB] to-transparent pt-6 pb-4 px-4">
         <div className="max-w-2xl mx-auto flex gap-3">
-          {isReadOnly ? <p className="w-full text-center py-4 rounded-2xl bg-white/90 text-[#6B6B6B]">这是收到的只读快照；如需修改，请从档案页创建可编辑副本。</p> : <>
+          {isReadOnly ? <p className="w-full text-center py-4 rounded-2xl bg-white/90 text-[#6B6B6B]">{t('这是收到的只读快照；如需修改，请从档案页创建可编辑副本。')}</p> : <>
           <button
             onClick={skipCard}
             className="flex-1 py-4 rounded-2xl font-medium text-[#6B6B6B] bg-white border border-[#D9D4CC] hover:border-[#7A9B76] transition-colors"
           >
-            跳过
+            {t('跳过')}
           </button>
           </>}
           {!isReadOnly && <button
@@ -313,7 +318,7 @@ function CardDiscussionContent() {
                   : 'bg-[#C5BEB3]'
               )}
             >
-              {isSaving ? '保存中...' : (currentIndex < totalCards - 1 ? '保存并继续' : '完成')}
+              {isSaving ? t('保存中...') : (currentIndex < totalCards - 1 ? t('保存并继续') : t('完成'))}
             </button>}
         </div>
       </div>
@@ -323,7 +328,7 @@ function CardDiscussionContent() {
 
 export default function CardDiscussionPage() {
   return (
-    <Suspense fallback={<div className="min-h-screen bg-[#F5F1EB] flex items-center justify-center">加载中...</div>}>
+    <Suspense fallback={<LocalizedLoading />}>
       <CardDiscussionContent />
     </Suspense>
   );

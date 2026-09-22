@@ -1,5 +1,5 @@
 /**
- * 关系安那其自助拼盘 (Relationship Anarchy Smörgåsbord)
+ * 关系安那其拼盘 (Relationship Anarchy Smörgåsbord)
  *
  * Copyright (c) 2025 Tenlossiby
  * Licensed under MIT License
@@ -14,10 +14,12 @@ import { CATEGORIES, getTotalCards } from '@/data/categories';
 import { BottomNav } from '@/components/BottomNav';
 import { useApp } from '@/context/AppContext';
 import { cn } from '@/lib/utils';
+import { useLanguage } from '@/context/LanguageContext';
 
 export default function HomePage() {
   const router = useRouter();
   const { profiles } = useApp();
+  const { t, tc } = useLanguage();
   const [selectedCategories, setSelectedCategories] = useState<string[]>([]);
 
   const toggleCategory = (categoryId: string) => {
@@ -36,7 +38,7 @@ export default function HomePage() {
 
   const startExploration = () => {
     if (selectedCategories.length === 0) {
-      alert('请至少选择一个类别');
+      alert(t('请至少选择一个类别'));
       return;
     }
     // 如果没有档案，先创建
@@ -49,6 +51,7 @@ export default function HomePage() {
   };
 
   const totalCards = getTotalCards();
+  const localizedCategories = CATEGORIES.map(tc);
 
   return (
     <div className="min-h-screen bg-background pb-20">
@@ -56,10 +59,10 @@ export default function HomePage() {
       <header className="sticky top-0 z-40 bg-background/90 backdrop-blur-lg border-b border-border">
         <div className="max-w-2xl mx-auto px-4 py-4">
           <h1 className="text-xl font-bold text-foreground text-center">
-            关系安那其自助拼盘
+            {t('关系安那其拼盘')}
           </h1>
           <p className="text-sm text-muted-foreground text-center mt-1">
-            选择你感兴趣的类别，开始探索
+            {t('选择你感兴趣的类别，开始探索')}
           </p>
         </div>
       </header>
@@ -68,9 +71,9 @@ export default function HomePage() {
       <main className="max-w-2xl mx-auto px-4 py-6">
         {/* Stats */}
         <div className="flex items-center justify-center gap-4 mb-6 text-sm text-muted-foreground">
-          <span>{CATEGORIES.length} 个类别</span>
+          <span>{CATEGORIES.length} {t('个类别')}</span>
           <span>·</span>
-          <span>{totalCards} 张卡牌</span>
+          <span>{totalCards} {t('张卡牌')}</span>
         </div>
 
         {/* Actions */}
@@ -80,16 +83,16 @@ export default function HomePage() {
             className="flex items-center gap-2 px-4 py-2 bg-card rounded-full shadow-sm text-foreground hover:shadow-md transition-all"
           >
             <Shuffle className="w-4 h-4" />
-            <span className="text-sm">随机抽取</span>
+            <span className="text-sm">{t('随机抽取')}</span>
           </button>
           <span className="text-muted-foreground">
-            已选 {selectedCategories.length} 项
+            {t('已选')} {selectedCategories.length} {t('项')}
           </span>
         </div>
 
         {/* Categories Grid */}
         <div className="grid grid-cols-2 sm:grid-cols-3 gap-3 mb-32">
-          {CATEGORIES.map((category) => {
+          {localizedCategories.map((category) => {
             const isSelected = selectedCategories.includes(category.id);
 
             return (
@@ -108,7 +111,7 @@ export default function HomePage() {
                   {category.zh}
                 </span>
                 <span className="text-xs text-muted-foreground mt-1">
-                  {category.cards.length} 张
+                  {category.cards.length} {t('张')}
                 </span>
                 {isSelected && (
                   <div className="absolute top-2 right-2 w-5 h-5 bg-primary rounded-full flex items-center justify-center">
@@ -137,7 +140,7 @@ export default function HomePage() {
             )}
           >
             <Sparkles className="w-5 h-5" />
-            <span>开始探索</span>
+            <span>{t('开始探索')}</span>
             <ArrowRight className="w-5 h-5" />
           </button>
         </div>

@@ -8,12 +8,15 @@ import { useApp } from '@/context/AppContext';
 import { CATEGORIES } from '@/data/categories';
 import { BottomNav } from '@/components/BottomNav';
 import { cn } from '@/lib/utils';
+import { useLanguage } from '@/context/LanguageContext';
+import { LocalizedLoading } from '@/components/LocalizedLoading';
 
 function ExploreCategorySelectContent() {
   const router = useRouter();
   const params = useParams();
   const searchParams = useSearchParams();
   const { profiles } = useApp();
+  const { t, tc } = useLanguage();
 
   const profileId = params.profileId as string;
   const preSelectedCategories = searchParams.get('categories')?.split(',').filter(Boolean) || [];
@@ -27,7 +30,7 @@ function ExploreCategorySelectContent() {
   const handleRandomCategory = () => {
     const available = CATEGORIES.filter(c => getCategoryProgress(c.id) < c.cards.length);
     if (available.length === 0) {
-      alert('所有类别都已填写完成！');
+      alert(t('所有类别都已填写完成！'));
       return;
     }
 
@@ -47,7 +50,7 @@ function ExploreCategorySelectContent() {
   if (!profile) {
     return (
       <div className="min-h-screen bg-[#F5F1EB] flex items-center justify-center">
-        <p className="text-[#6B6B6B]">档案不存在</p>
+        <p className="text-[#6B6B6B]">{t('档案不存在')}</p>
       </div>
     );
   }
@@ -64,7 +67,7 @@ function ExploreCategorySelectContent() {
             <ArrowLeft className="w-6 h-6" />
           </Link>
           <div className="flex items-center gap-2">
-            <span className="font-medium text-[#4A4A4A]">选择类别</span>
+            <span className="font-medium text-[#4A4A4A]">{t('选择类别')}</span>
           </div>
           <div className="w-6" />
         </div>
@@ -78,27 +81,27 @@ function ExploreCategorySelectContent() {
           className="w-full mb-6 flex items-center justify-center gap-2 p-4 bg-[#7A9B76] text-white rounded-2xl font-medium hover:bg-[#5A7B56] transition-colors"
         >
           <Shuffle className="w-5 h-5" />
-          <span>随机抽取 3 个类别</span>
+          <span>{t('随机抽取 3 个类别')}</span>
         </button>
 
         {/* Selected Categories Hint */}
         {preSelectedCategories.length > 0 && (
           <div className="mb-6 p-4 bg-[#E8F2E6] rounded-xl border border-[#7A9B76]/20">
             <p className="text-sm text-[#4A5D4B] mb-2">
-              已选择 {preSelectedCategories.length} 个类别
+              {t('已选择')} {preSelectedCategories.length} {t('个类别')}
             </p>
             <button
               onClick={handleStartExplore}
               className="w-full py-3 bg-[#7A9B76] text-white rounded-xl font-medium hover:bg-[#5A7B56] transition-colors"
             >
-              开始探索
+              {t('开始探索')}
             </button>
           </div>
         )}
 
         {/* Categories Grid */}
         <div className="grid grid-cols-2 gap-3">
-          {CATEGORIES.map((category) => {
+          {CATEGORIES.map(tc).map((category) => {
             const progress = getCategoryProgress(category.id);
             const isCompleted = progress >= category.cards.length;
 
@@ -136,7 +139,7 @@ function ExploreCategorySelectContent() {
 
 export default function ExploreCategorySelectPage() {
   return (
-    <Suspense fallback={<div className="min-h-screen bg-[#F5F1EB] flex items-center justify-center">加载中...</div>}>
+    <Suspense fallback={<LocalizedLoading />}>
       <ExploreCategorySelectContent />
     </Suspense>
   );

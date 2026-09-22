@@ -8,12 +8,14 @@ import { useApp } from '@/context/AppContext';
 import { BottomNav } from '@/components/BottomNav';
 import { cn } from '@/lib/utils';
 import { getTotalCards } from '@/data/categories';
-import { describePerspective } from '@/lib/domain';
+import { useLanguage } from '@/context/LanguageContext';
+import { LocalizedLoading } from '@/components/LocalizedLoading';
 
 function ProfilesContent() {
   const router = useRouter();
   const searchParams = useSearchParams();
   const { profiles, selectedProfiles, toggleProfileSelection, deleteProfile } = useApp();
+  const { t, perspective, relation } = useLanguage();
   const [showDeleteConfirm, setShowDeleteConfirm] = useState<string | null>(null);
   const [highlightProfileId, setHighlightProfileId] = useState<string | null>(null);
 
@@ -51,13 +53,13 @@ function ProfilesContent() {
       {/* Header */}
       <header className="sticky top-0 z-40 bg-background/90 backdrop-blur-lg border-b border-border">
         <div className="max-w-2xl mx-auto px-4 py-4 flex items-center justify-between">
-          <h1 className="text-xl font-bold text-foreground">我的档案</h1>
+          <h1 className="text-xl font-bold text-foreground">{t('我的档案')}</h1>
           <Link
             href="/profiles/new"
             className="flex items-center gap-1 px-3 py-1.5 bg-primary text-primary-foreground rounded-full text-sm font-medium hover:bg-primary/90 transition-colors"
           >
             <Plus className="w-4 h-4" />
-            <span>新建</span>
+            <span>{t('新建')}</span>
           </Link>
         </div>
       </header>
@@ -69,23 +71,23 @@ function ProfilesContent() {
             <div className="w-20 h-20 bg-muted rounded-full flex items-center justify-center mb-4">
               <Plus className="w-10 h-10 text-muted-foreground" />
             </div>
-            <h2 className="text-lg font-medium text-foreground mb-2">还没有档案</h2>
+            <h2 className="text-lg font-medium text-foreground mb-2">{t('还没有档案')}</h2>
             <p className="text-sm text-muted-foreground mb-6">
-              创建你的第一个关系档案，开始探索之旅
+              {t('创建你的第一个关系档案，开始探索之旅')}
             </p>
             <Link
               href="/profiles/new"
               className="flex items-center gap-2 px-6 py-3 bg-primary text-primary-foreground rounded-2xl font-medium hover:bg-primary/90 transition-colors"
             >
               <Plus className="w-5 h-5" />
-              <span>创建档案</span>
+              <span>{t('创建档案')}</span>
             </Link>
             <Link
               href="/profiles/import"
               className="flex items-center gap-2 px-6 py-3 mt-3 bg-card text-foreground border border-border rounded-2xl font-medium hover:border-primary hover:text-primary transition-colors"
             >
               <Download className="w-5 h-5" />
-              <span>导入已有档案</span>
+              <span>{t('导入已有档案')}</span>
             </Link>
           </div>
         ) : (
@@ -96,7 +98,7 @@ function ProfilesContent() {
               className="flex items-center justify-center gap-2 p-3 mb-4 bg-card rounded-xl border border-dashed border-border text-muted-foreground hover:border-primary hover:text-primary transition-colors"
             >
               <Download className="w-4 h-4" />
-              <span className="text-sm">导入档案</span>
+              <span className="text-sm">{t('导入档案')}</span>
             </Link>
 
             {/* Profile List */}
@@ -146,12 +148,12 @@ function ProfilesContent() {
                             <h3 className="font-medium text-foreground">{profile.name}</h3>
                             {profile.isImported && (
                               <span className="text-xs px-2 py-0.5 bg-blue-500/10 text-blue-500 dark:text-blue-400 rounded-full">
-                                📥 导入
+                                📥 {t('导入')}
                               </span>
                             )}
                           </div>
                           <p className="text-sm text-muted-foreground">
-                            {describePerspective(profile.fromName, profile.toName)} · {profile.relationLabel}
+                            {perspective(profile.fromName, profile.toName)} · {relation(profile.relationLabel)}
                           </p>
                           <div className="flex items-center gap-3 mt-2">
                             <span className="text-xs text-muted-foreground whitespace-nowrap">
@@ -192,7 +194,7 @@ function ProfilesContent() {
                     {/* Delete Confirmation */}
                     {showDeleteConfirm === profile.id && (
                       <div className="absolute inset-0 bg-card/95 flex items-center justify-center gap-2 p-4">
-                        <span className="text-sm text-muted-foreground">确定删除？</span>
+                        <span className="text-sm text-muted-foreground">{t('确定删除？')}</span>
                         <button
                           onClick={(e) => {
                             e.preventDefault();
@@ -201,13 +203,13 @@ function ProfilesContent() {
                           }}
                           className="px-3 py-1 bg-destructive text-destructive-foreground text-sm rounded-lg"
                         >
-                          删除
+                          {t('删除')}
                         </button>
                         <button
                           onClick={() => setShowDeleteConfirm(null)}
                           className="px-3 py-1 bg-muted text-foreground text-sm rounded-lg"
                         >
-                          取消
+                          {t('取消')}
                         </button>
                       </div>
                     )}
@@ -225,7 +227,7 @@ function ProfilesContent() {
                 }}
                 className="w-full mt-6 py-4 bg-primary text-primary-foreground rounded-2xl font-medium hover:bg-primary/90 transition-colors"
               >
-                对比选中的档案（{selectedProfiles.length} 个）
+                {t('对比选中的档案')}（{selectedProfiles.length} {t('个')}）
               </button>
             )}
           </>
@@ -239,7 +241,7 @@ function ProfilesContent() {
 
 export default function ProfilesPage() {
   return (
-    <Suspense fallback={<div className="min-h-screen bg-background flex items-center justify-center">加载中...</div>}>
+    <Suspense fallback={<LocalizedLoading themed />}>
       <ProfilesContent />
     </Suspense>
   );

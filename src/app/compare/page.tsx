@@ -7,9 +7,11 @@ import { ArrowLeft } from 'lucide-react';
 import { useApp } from '@/context/AppContext';
 import { CATEGORIES, getCategoryById } from '@/data/categories';
 import { STATUS_LABELS, CardAnswerV2 } from '@/types';
-import { classifyComparison, describePerspective, getAnswerStatuses, isAnswerEffective } from '@/lib/domain';
+import { classifyComparison, getAnswerStatuses, isAnswerEffective } from '@/lib/domain';
 import { BottomNav } from '@/components/BottomNav';
 import { cn } from '@/lib/utils';
+import { useLanguage } from '@/context/LanguageContext';
+import { LocalizedLoading } from '@/components/LocalizedLoading';
 
 interface CompareItem {
   cardId: string;
@@ -26,6 +28,7 @@ interface CompareItem {
 function CompareContent() {
   const searchParams = useSearchParams();
   const { profiles } = useApp();
+  const { t, tc, perspective } = useLanguage();
 
   const profileIds = searchParams.get('profiles')?.split(',').filter(Boolean) || [];
   const selectedProfiles = profileIds.map(id => profiles.find(profile => profile.id === id)).filter((profile): profile is typeof profiles[number] => Boolean(profile));
@@ -49,7 +52,7 @@ function CompareContent() {
 
         answers.push({
           profileId: profile.id,
-          profileName: describePerspective(profile.direction.author.displayName, profile.direction.subject.displayName),
+          profileName: perspective(profile.direction.author.displayName, profile.direction.subject.displayName),
           answer,
         });
       }
@@ -67,7 +70,7 @@ function CompareContent() {
     }
 
     return items;
-  }, [selectedProfiles, activeCategory]);
+  }, [selectedProfiles, activeCategory, perspective]);
 
   // 计算每个类别的对比项数量
   const categoryCounts = useMemo(() => {
@@ -97,12 +100,12 @@ function CompareContent() {
   if (selectedProfiles.length < 2) {
     return (
       <div className="min-h-screen bg-[#F5F1EB] flex flex-col items-center justify-center p-4">
-        <p className="text-[#6B6B6B] mb-4">请选择至少两个档案进行对比</p>
+        <p className="text-[#6B6B6B] mb-4">{t('请选择至少两个档案进行对比')}</p>
         <Link
           href="/profiles"
           className="px-6 py-3 bg-[#7A9B76] text-white rounded-2xl font-medium"
         >
-          返回档案列表
+          {t('返回档案列表')}
         </Link>
       </div>
     );
@@ -117,7 +120,7 @@ function CompareContent() {
             <Link href="/profiles" className="p-1 text-[#6B6B6B] hover:text-[#4A4A4A]">
               <ArrowLeft className="w-6 h-6" />
             </Link>
-            <h1 className="text-lg font-bold text-[#4A4A4A]">档案对比</h1>
+            <h1 className="text-lg font-bold text-[#4A4A4A]">{t('档案对比')}</h1>
           </div>
 
           {/* Selected Profiles */}
@@ -153,7 +156,7 @@ function CompareContent() {
                 )}
               >
                 <span>{category.icon}</span>
-                <span>{category.zh}</span>
+                <span>{tc(category).zh}</span>
                 <span className="text-xs opacity-60">({count})</span>
               </button>
             );
@@ -165,8 +168,8 @@ function CompareContent() {
       <main className="max-w-2xl mx-auto px-4 py-6">
         {compareData.length === 0 ? (
           <div className="text-center py-16">
-            <p className="text-[#6B6B6B]">暂无对比数据</p>
-            <p className="text-sm text-[#C5BEB3] mt-2">请先在档案中填写该类别的内容</p>
+            <p className="text-[#6B6B6B]">{t('暂无对比数据')}</p>
+            <p className="text-sm text-[#C5BEB3] mt-2">{t('请先在档案中填写该类别的内容')}</p>
           </div>
         ) : (
           <div className="space-y-4">
@@ -174,14 +177,14 @@ function CompareContent() {
               <div key={item.cardId} className="bg-white rounded-2xl overflow-hidden shadow-sm">
                 {/* Card Header */}
                 <div className="p-4 bg-[#E8E2DA]/50 border-b border-[#E8E2DA]">
-                  <h3 className="font-medium text-[#4A4A4A]">{item.cardZh}</h3>
+                  <h3 className="font-medium text-[#4A4A4A]">{t(item.cardZh)}</h3>
                   <p className="text-xs text-[#6B6B6B]">{item.cardEn}</p>
                   {item.prompt && (
                     <p className="text-sm text-[#6B6B6B] mt-1 italic">
-                      &quot;{item.prompt}&quot;
+                      &quot;{t(item.prompt)}&quot;
                     </p>
                   )}
-                  <p className="text-xs text-[#6B6B6B] mt-2">{classifyComparison(item.answers.map(answer => answer.answer))}</p>
+                  <p className="text-xs text-[#6B6B6B] mt-2">{t(classifyComparison(item.answers.map(answer => answer.answer)))}</p>
                 </div>
 
                 {/* Profile Answers */}
@@ -206,10 +209,10 @@ function CompareContent() {
                                     className="px-2 py-1 rounded-lg text-xs font-medium text-white"
                                     style={{ backgroundColor: config.color }}
                                   >
-                                    {config.zh}
+                                    {t(config.zh)}
                                   </span>
                                 ); })}
-                              {answer.answer.participation && <span className="px-2 py-1 rounded-lg text-xs font-medium bg-[#E8F0F8] text-[#4A4A4A]">{({ self: '我会参与', other: '对方会参与', together: '共同参与', varies: '视情况而定' } as const)[answer.answer.participation]}</span>}
+                              {answer.answer.participation && <span className="px-2 py-1 rounded-lg text-xs font-medium bg-[#E8F0F8] text-[#4A4A4A]">{t(({ self: '我会参与', other: '对方会参与', together: '共同参与', varies: '视情况而定' } as const)[answer.answer.participation])}</span>}
                             </div>
                             {answer.answer.note && (
                               <p className="text-sm text-[#6B6B6B] bg-white/50 rounded-lg p-2">
@@ -218,7 +221,7 @@ function CompareContent() {
                             )}
                           </>
                         ) : (
-                          <p className="text-sm text-[#C5BEB3]">未作答</p>
+                          <p className="text-sm text-[#C5BEB3]">{t('未作答')}</p>
                         )}
                       </div>
                     );
@@ -237,7 +240,7 @@ function CompareContent() {
 
 export default function ComparePage() {
   return (
-    <Suspense fallback={<div className="min-h-screen bg-[#F5F1EB] flex items-center justify-center">加载中...</div>}>
+    <Suspense fallback={<LocalizedLoading />}>
       <CompareContent />
     </Suspense>
   );
