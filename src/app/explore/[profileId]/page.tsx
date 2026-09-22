@@ -1,11 +1,11 @@
 'use client';
 
-import { useState, useEffect, Suspense } from 'react';
+import { Suspense } from 'react';
 import { useRouter, useParams, useSearchParams } from 'next/navigation';
 import Link from 'next/link';
-import { ArrowLeft, Shuffle, ChevronRight } from 'lucide-react';
+import { ArrowLeft, Shuffle } from 'lucide-react';
 import { useApp } from '@/context/AppContext';
-import { CATEGORIES, getCategoryById } from '@/data/categories';
+import { CATEGORIES } from '@/data/categories';
 import { BottomNav } from '@/components/BottomNav';
 import { cn } from '@/lib/utils';
 
@@ -21,8 +21,7 @@ function ExploreCategorySelectContent() {
   const profile = profiles.find(p => p.id === profileId);
 
   const getCategoryProgress = (categoryId: string) => {
-    const progress = profile?.progress.find(p => p.categoryId === categoryId);
-    return progress?.answers.length || 0;
+    return Object.keys(profile?.answers[categoryId]?.answers || {}).length;
   };
 
   const handleRandomCategory = () => {
@@ -40,8 +39,9 @@ function ExploreCategorySelectContent() {
   };
 
   const handleStartExplore = () => {
-    const selectedIds = preSelectedCategories.join(',');
-    router.push(`/explore/${profileId}/${preSelectedCategories[0]}?categories=${selectedIds}`);
+    const selected = preSelectedCategories.length ? preSelectedCategories : [CATEGORIES.find(category => getCategoryProgress(category.id) < category.cards.length)?.id || CATEGORIES[0].id];
+    const selectedIds = selected.join(',');
+    router.push(`/explore/${profileId}/${selected[0]}?categories=${selectedIds}`);
   };
 
   if (!profile) {

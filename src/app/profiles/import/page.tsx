@@ -5,24 +5,33 @@ import { useRouter } from 'next/navigation';
 import Link from 'next/link';
 import { ArrowLeft, Upload, Clipboard, FileText, Check } from 'lucide-react';
 import { useApp } from '@/context/AppContext';
+import { parseImportText } from '@/lib/storageV2';
+import { parseLegacyExpoExport, parseLegacyV1Export } from '@/lib/legacyMigration';
+import { describePerspective } from '@/lib/domain';
 import { BottomNav } from '@/components/BottomNav';
 import { cn } from '@/lib/utils';
 
 export default function ImportProfilePage() {
   const router = useRouter();
-  const { importProfile } = useApp();
+  const { importProfile, importLegacyProfile } = useApp();
   const fileInputRef = useRef<HTMLInputElement>(null);
 
   const [importMode, setImportMode] = useState<'clipboard' | 'file'>('clipboard');
   const [clipboardText, setClipboardText] = useState('');
   const [importStatus, setImportStatus] = useState<'idle' | 'success' | 'error'>('idle');
   const [errorMessage, setErrorMessage] = useState('');
+  const [preview, setPreview] = useState<{ direction: string; title: string; includesNotes: boolean } | null>(null);
+  const [pendingImportText, setPendingImportText] = useState<string | null>(null);
+  const [legacyText, setLegacyText] = useState<string | null>(null);
+  const [legacyAuthor, setLegacyAuthor] = useState('');
+  const [legacySubject, setLegacySubject] = useState('');
+  const [legacyPreview, setLegacyPreview] = useState<{ sourceProfileId: string; itemCount: number } | null>(null);
 
   const handlePasteFromClipboard = async () => {
     try {
       const text = await navigator.clipboard.readText();
       setClipboardText(text);
-    } catch (e) {
+    } catch {
       setErrorMessage('无法读取剪贴板，请手动粘贴');
     }
   };
@@ -34,16 +43,66 @@ export default function ImportProfilePage() {
       return;
     }
 
-    const profile = importProfile(clipboardText);
+    let parsed;
+    try {
+      parsed = parseImportText(clipboardText);
+      setPreview({ direction: describePerspective(parsed.profile.direction.author.displayName, parsed.profile.direction.subject.displayName), title: parsed.profile.title, includesNotes: parsed.privacy.includesNotes });
+    } catch (error) {
+      const legacyV1 = parseLegacyV1Export(clipboardText);
+      if (legacyV1) {
+        const legacyProfile = legacyV1.profile;
+        const includesNotes = (legacyProfile.progress || []).some(category => (category.answers || []).some(answer => Boolean(answer.note?.trim())));
+        setPreview({ direction: describePerspective(legacyProfile.fromName || '', legacyProfile.toName || ''), title: legacyProfile.name || '旧版关系档案', includesNotes });
+        setPendingImportText(clipboardText);
+        setImportStatus('idle');
+        setErrorMessage('识别到旧版档案。请确认谁填写了它、写的是与谁的关系。导入后会先以只读方式打开。');
+        return;
+      }
+      if (parseLegacyExpoExport(clipboardText)) {
+        setLegacyText(clipboardText);
+        setPreview(null);
+        setPendingImportText(null);
+        setImportStatus('idle');
+        setErrorMessage('识别到旧 Expo 档案。请先确认谁填写了它、写的是与谁的关系。');
+        return;
+      }
+      setErrorMessage(error instanceof Error ? error.message : '无法解析档案，请检查格式是否正确');
+      setImportStatus('error');
+      return;
+    }
+    setPendingImportText(clipboardText);
+    setImportStatus('idle');
+    setErrorMessage('请检查预览，确认后才会写入本地档案。');
+  };
+
+  const handleConfirmImport = () => {
+    if (!pendingImportText) return;
+    const profile = importProfile(pendingImportText);
     if (profile) {
       setImportStatus('success');
       setTimeout(() => {
         router.push(`/profiles/${profile.id}`);
       }, 1000);
     } else {
-      setErrorMessage('无法解析档案，请检查格式是否正确');
+      setErrorMessage('这份档案可能已导入过，或无法写入本地存储。');
       setImportStatus('error');
     }
+  };
+
+  const handleLegacyPreview = () => {
+    if (!legacyText || !legacyAuthor.trim() || !legacySubject.trim()) { setErrorMessage('请先确认谁填写了这份档案，以及写的是与谁的关系。'); setImportStatus('error'); return; }
+    const parsed = parseLegacyExpoExport(legacyText);
+    if (!parsed) { setErrorMessage('旧档案无法读取，请保留原文件并检查格式。'); setImportStatus('error'); return; }
+    setLegacyPreview({ sourceProfileId: parsed.sourceProfileId, itemCount: parsed.items.length });
+    setImportStatus('idle');
+    setErrorMessage('预览已生成。确认后才会写入本地档案。');
+  };
+
+  const handleConfirmLegacyImport = () => {
+    if (!legacyText || !legacyPreview) return;
+    const profile = importLegacyProfile(legacyText, legacyAuthor, legacySubject);
+    if (profile) { setImportStatus('success'); setTimeout(() => router.push(`/profiles/${profile.id}`), 500); }
+    else { setErrorMessage('旧档案无法读取，请保留原文件并检查格式。'); setImportStatus('error'); }
   };
 
   const handleFileUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -131,7 +190,7 @@ export default function ImportProfilePage() {
                   : 'bg-[#C5BEB3] cursor-not-allowed'
               )}
             >
-              导入档案
+              生成导入预览
             </button>
           </div>
         ) : (
@@ -178,11 +237,14 @@ export default function ImportProfilePage() {
         <div className="mt-8 p-4 bg-[#E8E2DA] rounded-xl">
           <h3 className="font-medium text-[#4A4A4A] mb-2">导入说明</h3>
           <ul className="text-sm text-[#6B6B6B] space-y-1">
-            <li>• 导入的档案会自动调换指向：原档案的&quot;对方&quot;会变为&quot;我&quot;</li>
+            <li>• 别人分享来的档案会按对方填写时的视角呈现，导入后不能直接改；需要继续填写时，可以创建副本</li>
             <li>• 支持从剪贴板粘贴或上传 .txt 文件</li>
             <li>• 文件必须包含 ---RAS_DATA_START--- 和 ---RAS_DATA_END--- 标记</li>
+            <li>• Base64 只是编码，不是加密；导入前请确认内容来源和隐私边界</li>
           </ul>
         </div>
+        {preview && <div className="mt-4 p-4 bg-white rounded-xl border border-[#7A9B76]/30 text-sm text-[#4A4A4A] space-y-3"><p className="font-medium">导入预览：{preview.title}</p><p className="mt-1">填写视角：{preview.direction}</p><p className="mt-1">包含备注：{preview.includesNotes ? '是' : '否'}</p><button onClick={handleConfirmImport} className="w-full py-3 rounded-xl bg-[#7A9B76] text-white font-medium">确认并写入只读档案</button></div>}
+        {legacyText && <div className="mt-4 p-4 bg-white rounded-xl border border-[#D4A84B]/40 text-sm text-[#4A4A4A] space-y-3"><p className="font-medium">这份旧档案需要你确认填写视角</p><p>旧文件没有完整记录这层信息，请手动补上：</p><input value={legacyAuthor} onChange={event => { setLegacyAuthor(event.target.value); setLegacyPreview(null); }} placeholder="谁填写了这份档案？" className="w-full px-3 py-2 rounded-lg border border-[#D9D4CC]" /><input value={legacySubject} onChange={event => { setLegacySubject(event.target.value); setLegacyPreview(null); }} placeholder="填写的是与谁的关系？" className="w-full px-3 py-2 rounded-lg border border-[#D9D4CC]" /><button onClick={handleLegacyPreview} className="w-full py-3 rounded-xl bg-[#D4A84B] text-white font-medium">查看旧档案预览</button>{legacyPreview && <div className="space-y-2 rounded-lg bg-[#F5F1EB] p-3"><p>来源档案：{legacyPreview.sourceProfileId}</p><p>发现条目：{legacyPreview.itemCount} 条</p><button onClick={handleConfirmLegacyImport} className="w-full py-3 rounded-xl bg-[#7A9B76] text-white font-medium">确认并导入只读档案</button></div>}</div>}
       </main>
 
       <BottomNav />

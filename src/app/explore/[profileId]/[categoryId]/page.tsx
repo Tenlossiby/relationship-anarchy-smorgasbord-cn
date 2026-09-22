@@ -6,8 +6,8 @@ import Link from 'next/link';
 import { ArrowLeft, ChevronLeft, ChevronRight, Check } from 'lucide-react';
 import { useApp } from '@/context/AppContext';
 import { getCategoryById } from '@/data/categories';
-import { STATUS_LABELS, StatusLabel, CardAnswer } from '@/types';
-import { updateCardAnswer, getProfile } from '@/lib/storage';
+import { STANCE_LABELS, MARKER_LABELS, Stance, AnswerMarker, Participation, Profile } from '@/types';
+import { updateCardAnswer, getAnswer, getProfile, markCardViewed } from '@/lib/storageV2';
 import { cn } from '@/lib/utils';
 
 function CardDiscussionContent() {
@@ -20,33 +20,37 @@ function CardDiscussionContent() {
   const categoryId = params.categoryId as string;
   const preSelectedCategories = searchParams.get('categories')?.split(',').filter(Boolean) || [];
 
-  const [profile, setProfile] = useState(getProfile(profileId));
+  const [profile, setProfile] = useState<Profile | undefined>(undefined);
   const category = getCategoryById(categoryId);
 
   const [currentIndex, setCurrentIndex] = useState(0);
-  const [selectedStatuses, setSelectedStatuses] = useState<StatusLabel[]>([]);
+  const [stance, setStance] = useState<Stance | undefined>();
+  const [markers, setMarkers] = useState<AnswerMarker[]>([]);
+  const [participation, setParticipation] = useState<Participation | undefined>();
   const [note, setNote] = useState('');
   const [isSaving, setIsSaving] = useState(false);
 
   useEffect(() => {
+    setProfile(getProfile(profileId));
+  }, [profileId]);
+
+  useEffect(() => {
     if (profile && category) {
       // 加载当前卡牌的已有回答
-      const categoryProgress = profile.progress.find(p => p.categoryId === categoryId);
-      if (categoryProgress) {
-        const cardAnswer = categoryProgress.answers.find(a => a.cardId === category.cards[currentIndex]?.id);
-        if (cardAnswer) {
-          setSelectedStatuses(cardAnswer.statuses);
-          setNote(cardAnswer.note || '');
-        } else {
-          setSelectedStatuses([]);
-          setNote('');
-        }
-      } else {
-        setSelectedStatuses([]);
-        setNote('');
-      }
+      const cardAnswer = getAnswer(profile, categoryId, category.cards[currentIndex]?.id);
+      setStance(cardAnswer?.stance); setMarkers(cardAnswer?.markers || []); setParticipation(cardAnswer?.participation); setNote(cardAnswer?.note || '');
     }
   }, [profile, category, currentIndex, categoryId]);
+
+  useEffect(() => {
+    if (!profile?.permissions.editable || !category) return;
+    const card = category.cards[currentIndex];
+    if (!card) return;
+    const persistOnLeave = () => updateCardAnswer(profileId, categoryId, { cardId: card.id, stance, markers, participation, note, updatedAt: new Date().toISOString() });
+    window.addEventListener('pagehide', persistOnLeave);
+    window.addEventListener('beforeunload', persistOnLeave);
+    return () => { window.removeEventListener('pagehide', persistOnLeave); window.removeEventListener('beforeunload', persistOnLeave); };
+  }, [profile, category, currentIndex, profileId, categoryId, stance, markers, participation, note]);
 
   if (!profile || !category) {
     return (
@@ -58,28 +62,24 @@ function CardDiscussionContent() {
 
   const currentCard = category.cards[currentIndex];
   const totalCards = category.cards.length;
+  const isReadOnly = !profile.permissions.editable;
+  const conversationPrompts = [currentCard.prompt, ...(currentCard.reflectionPrompts || [])].filter((prompt): prompt is string => Boolean(prompt));
 
-  const toggleStatus = (status: StatusLabel) => {
-    setSelectedStatuses(prev => {
-      if (prev.includes(status)) {
-        return prev.filter(s => s !== status);
-      }
-      return [...prev, status];
-    });
+  const persistCurrent = () => {
+    if (isReadOnly) return;
+    updateCardAnswer(profileId, categoryId, { cardId: currentCard.id, stance, markers, participation, note, updatedAt: new Date().toISOString() });
+    const savedProfile = getProfile(profileId);
+    if (savedProfile) setProfile(savedProfile);
+    refreshProfiles();
   };
 
+  const toggleMarker = (marker: AnswerMarker) => setMarkers(prev => prev.includes(marker) ? prev.filter(item => item !== marker) : [...prev, marker]);
+
   const saveAndNext = async () => {
+    if (isReadOnly) return;
     setIsSaving(true);
 
-    // 保存当前回答
-    updateCardAnswer(profileId, categoryId, currentCard.id, selectedStatuses, note || undefined);
-
-    // 刷新档案数据
-    const updatedProfile = getProfile(profileId);
-    if (updatedProfile) {
-      setProfile(updatedProfile);
-    }
-    refreshProfiles();
+    persistCurrent();
 
     // 跳转到下一张
     if (currentIndex < totalCards - 1) {
@@ -106,6 +106,11 @@ function CardDiscussionContent() {
   };
 
   const skipCard = () => {
+    if (isReadOnly) return;
+    markCardViewed(profileId, categoryId, currentCard.id);
+    const savedProfile = getProfile(profileId);
+    if (savedProfile) setProfile(savedProfile);
+    refreshProfiles();
     if (currentIndex < totalCards - 1) {
       setCurrentIndex(currentIndex + 1);
     } else {
@@ -128,21 +133,21 @@ function CardDiscussionContent() {
   };
 
   const goToPrev = () => {
+    persistCurrent();
     if (currentIndex > 0) {
       setCurrentIndex(currentIndex - 1);
     }
   };
 
   const goToNext = () => {
+    persistCurrent();
     if (currentIndex < totalCards - 1) {
       setCurrentIndex(currentIndex + 1);
     }
   };
 
-  const statusList: StatusLabel[] = [
-    'agree', 'necessary', 'maybe', 'future_possible',
-    'need_discussion', 'absolutely_not', 'hard_limit'
-  ];
+  const stanceList: Stance[] = ['want', 'open', 'unsure', 'not_for_me', 'hard_limit'];
+  const markerList: AnswerMarker[] = ['important', 'future_possible', 'need_discussion'];
 
   return (
     <div className="min-h-screen bg-[#F5F1EB] pb-32">
@@ -152,6 +157,7 @@ function CardDiscussionContent() {
           <div className="flex items-center justify-between mb-2">
             <Link
               href={`/profiles/${profileId}`}
+              onClick={persistCurrent}
               className="p-1 text-[#6B6B6B] hover:text-[#4A4A4A]"
             >
               <ArrowLeft className="w-6 h-6" />
@@ -179,20 +185,29 @@ function CardDiscussionContent() {
       <main className="max-w-2xl mx-auto px-4 py-6">
         {/* Card */}
         <div className="bg-white rounded-2xl p-6 shadow-sm mb-6">
-          {/* Context Question */}
-          {currentCard.contextQuestion && (
-            <p className="text-sm text-[#6B6B6B] mb-4 italic">
-              &quot;{currentCard.contextQuestion}&quot;
-            </p>
-          )}
-
-          {/* Card Content */}
           <h2 className="text-xl font-medium text-[#4A4A4A] text-center mb-2">
             {currentCard.zh}
           </h2>
           <p className="text-sm text-[#6B6B6B] text-center">
             {currentCard.en}
           </p>
+
+          {conversationPrompts.length ? (
+            <div className="mt-5 overflow-hidden rounded-2xl bg-[#F7F4EF] px-4">
+              {conversationPrompts.map((prompt, index) => (
+                <div
+                  key={prompt}
+                  className={cn(
+                    'flex items-start gap-3 py-3.5',
+                    index < conversationPrompts.length - 1 && 'border-b border-[#E3DED6]'
+                  )}
+                >
+                  <span className="mt-[0.7rem] h-1.5 w-1.5 shrink-0 rounded-full bg-[#7A9B76]" />
+                  <p className="text-[15px] leading-7 text-[#4A4A4A]">{prompt}</p>
+                </div>
+              ))}
+            </div>
+          ) : null}
         </div>
 
         {/* Navigation Buttons */}
@@ -225,9 +240,9 @@ function CardDiscussionContent() {
           </button>
         </div>
 
-        {/* Status Labels */}
+        {/* V2 answer axes */}
         <div className="mb-6">
-          <p className="text-sm text-[#6B6B6B] mb-3">选择状态（可多选）</p>
+          <p className="text-sm text-[#6B6B6B] mb-3">你对此的基本态度（单选）</p>
 
           {/* Definition & Communication Hint */}
           <div className="bg-[#E8F2E6] rounded-xl p-4 mb-4 border border-[#7A9B76]/20">
@@ -238,14 +253,14 @@ function CardDiscussionContent() {
           </div>
 
           <div className="grid grid-cols-2 gap-2">
-            {statusList.map((status) => {
-              const config = STATUS_LABELS[status];
-              const isSelected = selectedStatuses.includes(status);
+            {stanceList.map((value) => {
+              const config = STANCE_LABELS[value];
+              const isSelected = stance === value;
 
               return (
                 <button
-                  key={status}
-                  onClick={() => toggleStatus(status)}
+                  key={value}
+                  onClick={() => setStance(value)} disabled={isReadOnly}
                   className={cn(
                     'flex items-center justify-between px-4 py-3 rounded-xl text-sm font-medium transition-all',
                     isSelected
@@ -260,6 +275,17 @@ function CardDiscussionContent() {
               );
             })}
           </div>
+          <p className="text-sm text-[#6B6B6B] mt-5 mb-3">补充标记（可多选）</p>
+          <div className="grid grid-cols-2 gap-2">
+            {markerList.map((marker) => {
+              const isSelected = markers.includes(marker);
+              return <button key={marker} onClick={() => toggleMarker(marker)} disabled={isReadOnly} aria-pressed={isSelected} className={cn('flex items-center justify-between px-4 py-3 rounded-xl text-sm font-medium transition-all', isSelected ? 'bg-[#5BA0A0] text-white shadow-md' : 'bg-white text-[#4A4A4A] border border-[#D9D4CC] hover:border-[#7A9B76]')}><span>{MARKER_LABELS[marker]}</span>{isSelected && <Check className="w-4 h-4" />}</button>;
+            })}
+          </div>
+          <label className="block text-sm text-[#6B6B6B] mt-5 mb-2" htmlFor="participation">如果需要区分行动者</label>
+          <select id="participation" disabled={isReadOnly} value={participation || ''} onChange={(event) => setParticipation((event.target.value || undefined) as Participation | undefined)} className="w-full px-4 py-3 rounded-xl bg-white border border-[#D9D4CC] text-sm">
+            <option value="">暂不区分</option><option value="self">主要由我</option><option value="other">主要由对方</option><option value="together">一起</option><option value="varies">视情况而定</option>
+          </select>
         </div>
 
         {/* Note Input */}
@@ -267,6 +293,7 @@ function CardDiscussionContent() {
           <p className="text-sm text-[#6B6B6B] mb-2">备注（可选）</p>
           <textarea
             value={note}
+            disabled={isReadOnly}
             onChange={(e) => setNote(e.target.value)}
             placeholder="记录你的想法、偏好或需要讨论的内容..."
             className="w-full h-24 px-4 py-3 bg-white rounded-xl border border-[#D9D4CC] focus:border-[#7A9B76] focus:outline-none transition-colors resize-none text-sm"
@@ -277,24 +304,26 @@ function CardDiscussionContent() {
       {/* Bottom Actions */}
       <div className="fixed bottom-0 left-0 right-0 bg-gradient-to-t from-[#F5F1EB] via-[#F5F1EB] to-transparent pt-6 pb-4 px-4">
         <div className="max-w-2xl mx-auto flex gap-3">
+          {isReadOnly ? <p className="w-full text-center py-4 rounded-2xl bg-white/90 text-[#6B6B6B]">这是收到的只读快照；如需修改，请从档案页创建可编辑副本。</p> : <>
           <button
             onClick={skipCard}
             className="flex-1 py-4 rounded-2xl font-medium text-[#6B6B6B] bg-white border border-[#D9D4CC] hover:border-[#7A9B76] transition-colors"
           >
             跳过
           </button>
-          <button
-            onClick={saveAndNext}
-            disabled={isSaving}
-            className={cn(
-              'flex-1 py-4 rounded-2xl font-medium text-white transition-all',
-              selectedStatuses.length > 0
-                ? 'bg-[#7A9B76] hover:bg-[#5A7B56]'
-                : 'bg-[#C5BEB3]'
-            )}
-          >
-            {isSaving ? '保存中...' : (currentIndex < totalCards - 1 ? '保存并继续' : '完成')}
-          </button>
+          </>}
+          {!isReadOnly && <button
+              onClick={saveAndNext}
+              disabled={isSaving}
+              className={cn(
+                'flex-1 py-4 rounded-2xl font-medium text-white transition-all',
+              Boolean(stance || markers.length || participation || note.trim())
+                  ? 'bg-[#7A9B76] hover:bg-[#5A7B56]'
+                  : 'bg-[#C5BEB3]'
+              )}
+            >
+              {isSaving ? '保存中...' : (currentIndex < totalCards - 1 ? '保存并继续' : '完成')}
+            </button>}
         </div>
       </div>
     </div>

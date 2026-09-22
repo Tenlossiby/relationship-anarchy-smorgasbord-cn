@@ -1,6 +1,6 @@
 # 用户交互流程文档
 
-本文档使用 Mermaid 流程图详细记录"关系安那其自助拼盘"应用的页面交互逻辑。
+本文档记录 V2 的页面交互逻辑。方向始终表示“作者 → 对象”，导入不会交换方向；收到的档案是只读快照。
 
 ---
 
@@ -98,8 +98,8 @@ flowchart TD
     F --> G[档案页 - 导入档案]
     G --> H[粘贴口令或上传文件]
     H --> I[解析并创建档案]
-    I --> J[交换from/to指向]
-    J --> K[用户B开始填写]
+    I --> J[原样保留作者→对象方向并创建只读快照]
+    J --> K[用户B阅读或创建可编辑副本]
     K --> L[填写完成后对比]
     L --> M[档案对比页]
 
@@ -117,9 +117,9 @@ flowchart TD
     B --> C[点击对比按钮]
     C --> D[进入档案对比页]
     D --> E[按类别查看共识和分歧]
-    E --> F{是否需要AI分析?}
-    F -->|是| G[调用AI获取洞察]
-    F -->|否| H[手动查看]
+    E --> F[阅读描述性比较分类]
+    F --> G[手动讨论，不生成关系结论]
+    G --> H[手动查看]
     G --> H
     H --> I[返回档案列表]
 
@@ -225,14 +225,14 @@ flowchart LR
 
 **功能**：
 - 逐张显示类别中的卡牌
-- 选择状态标签（可多选）
+- 分开填写单选立场、多选补充标记和可选行动者
 - 添加备注
 - 上一张/下一张导航
 - 跳过/保存功能
 
 **交互**：
 - 点击状态标签：切换选中状态
-- 输入备注：实时保存
+- 输入备注：切卡、返回和离开时自动保存
 - 点击"跳过"：跳过当前卡牌，进入下一张
 - 点击"保存并继续"：保存当前回答，进入下一张
 - 点击左上角返回：返回档案详情页（高亮当前档案）
@@ -309,11 +309,11 @@ profiles.sort((a, b) =>
 **功能**：
 - 对比多个档案
 - 按类别分组显示共识和分歧
-- AI分析功能（可选）
+- 描述性比较分类，不提供 AI 关系判断
 
 **交互**：
 - 切换类别：查看不同类别的对比结果
-- 点击AI分析：生成洞察报告
+- 阅读相近、不同、值得聊聊和有人未回答
 - 点击返回：返回档案列表
 
 ---
@@ -351,27 +351,29 @@ profiles.sort((a, b) =>
 ### 1. 档案数据结构
 
 ```typescript
-interface Profile {
+interface ProfileV2 {
+  schemaVersion: 2;
   id: string;
-  name: string;
-  fromName: string;      // 填表人
-  toName: string;        // 对方
-  relationLabel: string; // 关系标签
-  createdAt: string;
-  isImported?: boolean;
-  importedFrom?: string;
-  progress: CategoryProgress[];
+  title: string;
+  direction: { author: PersonRef; subject: PersonRef };
+  relationLabels: string[];
+  answers: Record<string, CategoryProgressV2>;
+  provenance: Provenance;
+  permissions: { editable: boolean };
 }
 
-interface CategoryProgress {
+interface CategoryProgressV2 {
   categoryId: string;
-  answers: CardAnswer[];
+  answers: Record<string, CardAnswerV2>;
+  viewedCardIds?: string[];
 }
 
-interface CardAnswer {
+interface CardAnswerV2 {
   cardId: string;
-  statuses: StatusLabel[]; // 选中的状态标签
-  note?: string;            // 备注
+  stance?: 'want' | 'open' | 'unsure' | 'not_for_me' | 'hard_limit';
+  markers?: ('important' | 'future_possible' | 'need_discussion')[];
+  participation?: 'self' | 'other' | 'together' | 'varies';
+  note?: string;
 }
 ```
 
@@ -523,12 +525,12 @@ flowchart TD
 ```mermaid
 flowchart TD
     A[用户A的档案] --> B[导出数据]
-    B --> C[包含: fromName, toName, answers]
+    B --> C[包含: 作者→对象、V2回答与隐私摘要]
     C --> D[用户B导入]
-    D --> E[交换from/to]
-    E --> F[生成新档案ID]
+    D --> E[原样保留作者→对象方向]
+    E --> F[生成新快照ID并默认只读]
     F --> G[保存为导入档案]
-    G --> H[标记isImported=true]
+    G --> H[标记为 imported 只读快照]
 
     style E fill:#5B8DBE,color:#fff
     style H fill:#5B8DBE,color:#fff
@@ -639,5 +641,5 @@ flowchart TD
 
 ---
 
-**最后更新**：2026-03-01
-**版本**：1.0
+**最后更新**：2026-09-22
+**版本**：2.0

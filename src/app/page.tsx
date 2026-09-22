@@ -8,7 +8,6 @@
 'use client';
 
 import { useState } from 'react';
-import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { Shuffle, Sparkles, ArrowRight } from 'lucide-react';
 import { CATEGORIES, getTotalCards } from '@/data/categories';

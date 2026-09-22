@@ -1,23 +1,24 @@
 'use client';
 
-import { useEffect } from 'react';
 import { useRouter, useParams } from 'next/navigation';
 import Link from 'next/link';
 import { ArrowLeft, Download, Share2, Play } from 'lucide-react';
 import { useApp } from '@/context/AppContext';
 import { CATEGORIES, getTotalCards } from '@/data/categories';
-import { exportProfileToText, generateShareCode } from '@/lib/storage';
+import { exportProfileToText, generateShareCode } from '@/lib/storageV2';
 import { BottomNav } from '@/components/BottomNav';
-import { STATUS_LABELS, type StatusLabel } from '@/types';
+import { MARKER_LABELS, STANCE_LABELS, type CardAnswerV2 } from '@/types';
+import { describePerspective } from '@/lib/domain';
 
 export default function ProfileDetailPage() {
   const router = useRouter();
   const params = useParams();
-  const { profiles } = useApp();
+  const { profiles, createProfileCopy } = useApp();
   const profileId = params.id as string;
 
   const profile = profiles.find(p => p.id === profileId);
   const totalCards = getTotalCards();
+  const firstIncompleteCategory = CATEGORIES.find(category => Object.keys(profile?.answers[category.id]?.answers || {}).length < category.cards.length);
 
   if (!profile) {
     return (
@@ -27,7 +28,7 @@ export default function ProfileDetailPage() {
     );
   }
 
-  const completedCards = profile.progress.reduce((sum, p) => sum + p.answers.length, 0);
+  const completedCards = Object.values(profile.answers).reduce((sum, category) => sum + Object.keys(category.answers).length, 0);
   const progressPercent = Math.round((completedCards / totalCards) * 100);
 
   const handleExport = () => {
@@ -46,7 +47,7 @@ export default function ProfileDetailPage() {
     try {
       await navigator.clipboard.writeText(shareText);
       alert('档案口令已复制到剪贴板！');
-    } catch (e) {
+    } catch {
       // Fallback
       const textarea = document.createElement('textarea');
       textarea.value = shareText;
@@ -58,31 +59,34 @@ export default function ProfileDetailPage() {
     }
   };
 
+  const handleCreateCopy = () => {
+    if (!profile) return;
+    const copy = createProfileCopy(profile);
+    router.push(`/profiles/${copy.id}`);
+  };
+
   // 获取已填写的所有答案
   const getCompletedAnswers = () => {
     const answers: Array<{
       category: typeof CATEGORIES[0];
       cardId: string;
       card: typeof CATEGORIES[0]['cards'][0];
-      statuses: StatusLabel[];
-      note?: string;
+      answer: CardAnswerV2;
     }> = [];
 
-    profile.progress.forEach(catProgress => {
+    Object.values(profile.answers).forEach(catProgress => {
       const category = CATEGORIES.find(c => c.id === catProgress.categoryId);
       if (!category) return;
 
-      catProgress.answers.forEach(answer => {
-        // 只显示有选择状态或有备注的项目
-        if (answer.statuses.length > 0 || answer.note) {
+      Object.values(catProgress.answers).forEach(answer => {
+        if (answer.stance || answer.participation || answer.markers?.length || answer.note) {
           const card = category.cards.find(c => c.id === answer.cardId);
           if (card) {
             answers.push({
               category,
               cardId: answer.cardId,
               card,
-              statuses: answer.statuses,
-              note: answer.note,
+              answer,
             });
           }
         }
@@ -115,19 +119,14 @@ export default function ProfileDetailPage() {
       <main className="max-w-2xl mx-auto px-4 py-6">
         {/* Profile Info Card */}
         <div className="bg-white rounded-2xl p-5 mb-6 shadow-sm">
-          <h2 className="text-xl font-bold text-[#4A4A4A] mb-4">{profile.name}</h2>
+          <h2 className="text-xl font-bold text-[#4A4A4A] mb-4">{profile.title}</h2>
           <div className="space-y-2 text-sm">
-            <div className="flex justify-between">
-              <span className="text-[#6B6B6B]">我是</span>
-              <span className="text-[#4A4A4A] font-medium">{profile.fromName}</span>
-            </div>
-            <div className="flex justify-between">
-              <span className="text-[#6B6B6B]">对方是</span>
-              <span className="text-[#4A4A4A] font-medium">{profile.toName}</span>
+            <div className="rounded-xl bg-[#F5F1EB] px-3 py-2 text-[#4A4A4A]">
+              {describePerspective(profile.direction.author.displayName, profile.direction.subject.displayName)}
             </div>
             <div className="flex justify-between">
               <span className="text-[#6B6B6B]">关系标签</span>
-              <span className="text-[#4A4A4A] font-medium">{profile.relationLabel}</span>
+                <span className="text-[#4A4A4A] font-medium">{profile.relationLabels.join('、') || '未设置'}</span>
             </div>
             <div className="flex justify-between">
               <span className="text-[#6B6B6B]">创建时间</span>
@@ -135,10 +134,10 @@ export default function ProfileDetailPage() {
                 {new Date(profile.createdAt).toLocaleDateString('zh-CN')}
               </span>
             </div>
-            {profile.isImported && (
+            {profile.provenance.kind === 'imported' && (
               <div className="flex justify-between">
                 <span className="text-[#6B6B6B]">导入来源</span>
-                <span className="text-[#5B8DBE]">📥 {profile.importedFrom}</span>
+                <span className="text-[#5B8DBE]">📥 {profile.provenance.sourceProfileId}</span>
               </div>
             )}
           </div>
@@ -175,13 +174,14 @@ export default function ProfileDetailPage() {
             <span>分享口令</span>
           </button>
         </div>
+        {!profile.permissions.editable && <button onClick={handleCreateCopy} className="w-full mb-6 py-3 bg-[#7A9B76] text-white rounded-xl font-medium">基于此档案创建可编辑副本</button>}
 
         {/* Completed Answers Comparison */}
         {completedAnswers.length > 0 ? (
           <div className="mb-6">
             <h3 className="text-sm font-medium text-[#6B6B6B] mb-3">已填项目</h3>
             <div className="space-y-3">
-              {completedAnswers.map((answer, index) => (
+              {completedAnswers.map((answer) => (
                 <div
                   key={`${answer.category.id}-${answer.cardId}`}
                   className="bg-white rounded-xl p-4 shadow-sm"
@@ -193,25 +193,17 @@ export default function ProfileDetailPage() {
                       <div className="text-sm font-medium text-[#4A4A4A]">{answer.card.zh}</div>
                     </div>
                   </div>
-                  {answer.statuses.length > 0 && (
+                  {(answer.answer.stance || answer.answer.participation || answer.answer.markers?.length || answer.answer.legacy?.needsReview) && (
                     <div className="flex flex-wrap gap-2 mt-2">
-                      {answer.statuses.map(status => {
-                        const statusLabel = STATUS_LABELS[status];
-                        return (
-                          <span
-                            key={status}
-                            className="px-3 py-1 rounded-full text-xs text-white"
-                            style={{ backgroundColor: statusLabel?.color || '#999' }}
-                          >
-                            {statusLabel?.zh || status}
-                          </span>
-                        );
-                      })}
+                      {answer.answer.stance && <span className="px-3 py-1 rounded-full text-xs text-white" style={{ backgroundColor: STANCE_LABELS[answer.answer.stance].color }}>{STANCE_LABELS[answer.answer.stance].zh}</span>}
+                      {answer.answer.participation && <span className="px-3 py-1 rounded-full text-xs bg-[#E8F0F8] text-[#4A4A4A]">{({ self: '我会参与', other: '对方会参与', together: '共同参与', varies: '视情况而定' } as const)[answer.answer.participation]}</span>}
+                      {(answer.answer.markers || []).map(marker => <span key={marker} className="px-3 py-1 rounded-full text-xs bg-[#E8E2DA] text-[#4A4A4A]">{MARKER_LABELS[marker]}</span>)}
+                      {answer.answer.legacy?.needsReview && <span className="px-3 py-1 rounded-full text-xs bg-[#F7E7C6] text-[#8A641D]">旧状态需要复核</span>}
                     </div>
                   )}
-                  {answer.note && (
+                  {answer.answer.note && (
                     <div className="mt-2 text-xs text-[#6B6B6B] bg-[#F5F1EB] rounded-lg p-2">
-                      {answer.note}
+                      {answer.answer.note}
                     </div>
                   )}
                 </div>
@@ -224,7 +216,7 @@ export default function ProfileDetailPage() {
         {completedCards < totalCards && (
           <div className="mt-6">
             <Link
-              href={`/explore/${profile.id}`}
+              href={firstIncompleteCategory ? `/explore/${profile.id}/${firstIncompleteCategory.id}` : `/explore/${profile.id}`}
               className="flex items-center justify-center gap-2 w-full py-4 bg-[#7A9B76] text-white rounded-2xl font-medium hover:bg-[#5A7B56] transition-colors"
             >
               <Play className="w-5 h-5" />

@@ -1,9 +1,9 @@
-// 本地存储管理工具
+// @ts-nocheck
+// Legacy storage kept only for source compatibility while the app uses storageV2.
 import { Profile, ExportData, CardAnswer, CategoryProgress, Card } from '@/types';
 import { CATEGORIES } from '@/data/categories';
 
 const PROFILES_KEY = 'ra_profiles';
-const API_CONFIG_KEY = 'ra_api_config';
 
 // 获取所有档案
 export const getProfiles = (): Profile[] => {
@@ -202,9 +202,9 @@ export const importProfileFromText = (text: string): Profile | null => {
       id: generateId(), // 生成新ID
       isImported: true,
       importedFrom: decoded.profile.name,
-      // 导入时调转指向
-      fromName: decoded.profile.toName,
-      toName: decoded.profile.fromName,
+      // 导入永远保留原始方向；收到的档案由 V2 仓储标记为只读快照
+      fromName: decoded.profile.fromName,
+      toName: decoded.profile.toName,
     };
     
     return profile;
@@ -233,25 +233,4 @@ export const importFromClipboard = async (): Promise<Profile | null> => {
   } catch (e) {
     return null;
   }
-};
-
-// API 配置管理
-export interface ApiConfig {
-  baseUrl: string;
-  apiKey: string;
-  model: string;
-}
-
-export const getApiConfig = (): ApiConfig | null => {
-  if (typeof window === 'undefined') return null;
-  const data = localStorage.getItem(API_CONFIG_KEY);
-  return data ? JSON.parse(data) : null;
-};
-
-export const saveApiConfig = (config: ApiConfig): void => {
-  localStorage.setItem(API_CONFIG_KEY, JSON.stringify(config));
-};
-
-export const clearApiConfig = (): void => {
-  localStorage.removeItem(API_CONFIG_KEY);
 };

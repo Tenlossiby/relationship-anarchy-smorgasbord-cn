@@ -7,13 +7,19 @@
 
 'use client';
 
-import { useState } from 'react';
-import { ExternalLink, Github, Sun, Moon, Monitor, Download } from 'lucide-react';
+import { ExternalLink, Sun, Moon, Monitor, Download } from 'lucide-react';
 import { BottomNav } from '@/components/BottomNav';
 import { useTheme } from '@/context/ThemeContext';
+import { useEffect, useState } from 'react';
+import { RECOVERY_KEY } from '@/lib/storageV2';
 
 export default function SettingsPage() {
   const { theme, setTheme } = useTheme();
+  const [recoveryData, setRecoveryData] = useState<string | null>(null);
+
+  useEffect(() => {
+    setRecoveryData(window.localStorage.getItem(RECOVERY_KEY));
+  }, []);
 
   const themeOptions = [
     { value: 'light' as const, label: '浅色', icon: Sun },
@@ -28,6 +34,15 @@ export default function SettingsPage() {
     document.body.appendChild(link);
     link.click();
     document.body.removeChild(link);
+  };
+
+  const handleDownloadRecovery = () => {
+    if (!recoveryData) return;
+    const link = document.createElement('a');
+    link.href = URL.createObjectURL(new Blob([recoveryData], { type: 'application/json;charset=utf-8' }));
+    link.download = '关系档案恢复数据.json';
+    link.click();
+    URL.revokeObjectURL(link.href);
   };
 
   return (
@@ -68,6 +83,14 @@ export default function SettingsPage() {
           </div>
         </section>
 
+        {recoveryData && (
+          <section className="bg-[#FFF4DD] border border-[#D4A84B]/40 rounded-2xl p-5 mb-6 shadow-sm">
+            <h2 className="font-medium text-[#6B4F18] mb-2">发现未完成的迁移</h2>
+            <p className="text-sm text-[#6B5A36] leading-relaxed">旧档案迁移没有覆盖全部内容。原始数据已保留在本机，你可以先下载恢复文件，再决定是否继续处理。</p>
+            <button onClick={handleDownloadRecovery} className="mt-3 px-4 py-2 rounded-xl bg-[#D4A84B] text-white text-sm font-medium">下载恢复数据</button>
+          </section>
+        )}
+
         {/* About Section */}
         <section className="bg-card rounded-2xl p-5 mb-6 shadow-sm">
           <h2 className="font-medium text-card-foreground mb-4">关于</h2>
@@ -83,11 +106,11 @@ export default function SettingsPage() {
             </div>
 
             <p className="text-sm text-muted-foreground leading-relaxed">
-              这是一个多元包容的关系探索工具。你与对方可以从任意"菜单"中挑选任意数量的"菜品"，无论是一大份，还是只选一点点。你们共同选择的那些"菜品"，就是你们的关系。
+              这是一个多元包容的关系探索工具。你与对方可以从任意「菜单」中挑选任意数量的「菜品」，无论是一大份，还是只选一点点。你们共同选择的那些「菜品」，就是你们的关系。
             </p>
 
             <div className="text-xs text-muted-foreground">
-              Version 1.0
+              Version 2.0
             </div>
           </div>
         </section>
@@ -97,10 +120,10 @@ export default function SettingsPage() {
           <h2 className="font-medium text-card-foreground mb-3">💡 使用提示</h2>
 
           <div className="space-y-2 text-sm text-muted-foreground">
-            <p>• 不要在对方不知情的情况下偷偷加入"菜品"（期待）</p>
-            <p>• 这是你们自己的"拼盘"——如果想调整，完全没问题</p>
+            <p>• 不要在对方不知情的情况下偷偷加入「菜品」（期待）</p>
+            <p>• 这是你们自己的「拼盘」——如果想调整，完全没问题</p>
             <p>• 定期导出档案备份，避免数据丢失</p>
-            <p>• 使用分享口令可以让对方导入并调换指向</p>
+              <p>• 别人分享来的档案会按对方填写时的视角呈现；想接着填写，可以创建一份自己的副本</p>
           </div>
         </section>
 
@@ -109,9 +132,9 @@ export default function SettingsPage() {
           <h2 className="font-medium text-card-foreground mb-4">隐私说明</h2>
 
           <div className="space-y-2 text-sm text-muted-foreground">
-            <p>🔒 所有数据均存储在您的浏览器本地。</p>
-            <p>🔒 我们不会收集或上传任何个人信息。</p>
-            <p>🔒 清除浏览器数据将删除所有档案。</p>
+            <p>🔒 所有数据均存储在您的浏览器本地；本地保存不等于设备加密。</p>
+            <p>🔒 导出文件中的 Base64 只是编码，不是加密；分享前请确认其中可能含有敏感备注。</p>
+            <p>🔒 我们不会收集或上传个人回答；清除浏览器数据可能删除本地档案，请先备份。</p>
           </div>
         </section>
 

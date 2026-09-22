@@ -8,11 +8,12 @@ import { useApp } from '@/context/AppContext';
 import { BottomNav } from '@/components/BottomNav';
 import { cn } from '@/lib/utils';
 import { getTotalCards } from '@/data/categories';
+import { describePerspective } from '@/lib/domain';
 
 function ProfilesContent() {
   const router = useRouter();
   const searchParams = useSearchParams();
-  const { profiles, selectedProfiles, toggleProfileSelection, clearSelection, deleteProfile } = useApp();
+  const { profiles, selectedProfiles, toggleProfileSelection, deleteProfile } = useApp();
   const [showDeleteConfirm, setShowDeleteConfirm] = useState<string | null>(null);
   const [highlightProfileId, setHighlightProfileId] = useState<string | null>(null);
 
@@ -40,7 +41,7 @@ function ProfilesContent() {
   const getCompletedCards = (profileId: string) => {
     const profile = profiles.find(p => p.id === profileId);
     if (!profile) return 0;
-    return profile.progress.reduce((sum, p) => sum + p.answers.length, 0);
+    return Object.values(profile.answers).reduce((sum, category) => sum + Object.keys(category.answers).length, 0);
   };
 
   const canCompare = selectedProfiles.length >= 2;
@@ -79,6 +80,13 @@ function ProfilesContent() {
               <Plus className="w-5 h-5" />
               <span>创建档案</span>
             </Link>
+            <Link
+              href="/profiles/import"
+              className="flex items-center gap-2 px-6 py-3 mt-3 bg-card text-foreground border border-border rounded-2xl font-medium hover:border-primary hover:text-primary transition-colors"
+            >
+              <Download className="w-5 h-5" />
+              <span>导入已有档案</span>
+            </Link>
           </div>
         ) : (
           <>
@@ -93,7 +101,7 @@ function ProfilesContent() {
 
             {/* Profile List */}
             <div className="space-y-3">
-              {profiles
+              {[...profiles]
                 .sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime())
                 .map((profile) => {
                 const isSelected = selectedProfiles.includes(profile.id);
@@ -143,7 +151,7 @@ function ProfilesContent() {
                             )}
                           </div>
                           <p className="text-sm text-muted-foreground">
-                            {profile.fromName} ➔ {profile.toName} · {profile.relationLabel}
+                            {describePerspective(profile.fromName, profile.toName)} · {profile.relationLabel}
                           </p>
                           <div className="flex items-center gap-3 mt-2">
                             <span className="text-xs text-muted-foreground whitespace-nowrap">

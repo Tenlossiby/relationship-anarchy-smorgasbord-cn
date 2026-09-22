@@ -9,7 +9,10 @@ import {
   deleteProfile as deleteProfileFromStorage,
   createProfile,
   importProfileFromText,
-} from '@/lib/storage';
+  hasDuplicateExport,
+  createEditableCopy,
+  importLegacyExpoProfile,
+} from '@/lib/storageV2';
 
 interface AppContextType {
   profiles: Profile[];
@@ -24,6 +27,8 @@ interface AppContextType {
   toggleProfileSelection: (id: string) => void;
   clearSelection: () => void;
   importProfile: (text: string) => Profile | null;
+  importLegacyProfile: (text: string, authorName: string, subjectName: string) => Profile | null;
+  createProfileCopy: (profile: Profile) => Profile;
 }
 
 const AppContext = createContext<AppContextType | undefined>(undefined);
@@ -92,11 +97,26 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
   }, []);
 
   const importProfile = useCallback((text: string): Profile | null => {
+    if (hasDuplicateExport(text, getProfiles())) return null;
     const profile = importProfileFromText(text);
     if (profile) {
       addProfile(profile);
       refreshProfiles();
     }
+    return profile;
+  }, [refreshProfiles]);
+
+  const createProfileCopy = useCallback((source: Profile): Profile => {
+    const copy = createEditableCopy(source);
+    addProfile(copy);
+    refreshProfiles();
+    return copy;
+  }, [refreshProfiles]);
+
+  const importLegacyProfile = useCallback((text: string, authorName: string, subjectName: string): Profile | null => {
+    if (hasDuplicateExport(text, getProfiles())) return null;
+    const profile = importLegacyExpoProfile(text, authorName, subjectName);
+    if (profile) { addProfile(profile); refreshProfiles(); }
     return profile;
   }, [refreshProfiles]);
 
@@ -115,6 +135,8 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
         toggleProfileSelection,
         clearSelection,
         importProfile,
+        createProfileCopy,
+        importLegacyProfile,
       }}
     >
       {children}

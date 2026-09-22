@@ -6,7 +6,6 @@
  */
 
 import type { Metadata, Viewport } from 'next';
-import { Inspector } from 'react-dev-inspector';
 import './globals.css';
 import { AppProvider } from '@/context/AppContext';
 import { ThemeProvider } from '@/context/ThemeContext';
@@ -14,7 +13,6 @@ import { ThemeProvider } from '@/context/ThemeContext';
 export const viewport: Viewport = {
   width: 'device-width',
   initialScale: 1,
-  maximumScale: 1,
   themeColor: '#7A9B76',
 };
 
@@ -41,8 +39,6 @@ export default function RootLayout({
 }: Readonly<{
   children: React.ReactNode;
 }>) {
-  const isDev = process.env.NODE_ENV === 'development';
-
   return (
     <html lang="zh-CN">
       <head>
@@ -55,7 +51,6 @@ export default function RootLayout({
       <body className={`antialiased`}>
         <ThemeProvider>
           <AppProvider>
-            {isDev && <Inspector />}
             {children}
           </AppProvider>
         </ThemeProvider>

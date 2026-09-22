@@ -6,7 +6,7 @@ import Link from 'next/link';
 import { ArrowLeft, Plus } from 'lucide-react';
 import { useApp } from '@/context/AppContext';
 import { BottomNav } from '@/components/BottomNav';
-import { cn } from '@/lib/utils';
+import { describePerspective } from '@/lib/domain';
 
 function ProfileSelectContent() {
   const router = useRouter();
@@ -62,7 +62,7 @@ function ProfileSelectContent() {
               >
                 <h3 className="font-medium text-[#4A4A4A]">{profile.name}</h3>
                 <p className="text-sm text-[#6B6B6B]">
-                  {profile.fromName} ➔ {profile.toName} · {profile.relationLabel}
+                  {describePerspective(profile.fromName, profile.toName)} · {profile.relationLabel}
                 </p>
               </button>
             ))}

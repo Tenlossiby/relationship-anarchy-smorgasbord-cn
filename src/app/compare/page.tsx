@@ -1,12 +1,13 @@
 'use client';
 
-import { useState, useMemo, Suspense } from 'react';
-import { useRouter, useSearchParams } from 'next/navigation';
+import { useState, useMemo, useEffect, Suspense } from 'react';
+import { useSearchParams } from 'next/navigation';
 import Link from 'next/link';
 import { ArrowLeft } from 'lucide-react';
 import { useApp } from '@/context/AppContext';
 import { CATEGORIES, getCategoryById } from '@/data/categories';
-import { STATUS_LABELS, StatusLabel, Profile, CardAnswer } from '@/types';
+import { STANCE_LABELS, MARKER_LABELS, CardAnswerV2 } from '@/types';
+import { classifyComparison, describePerspective, isAnswerEffective } from '@/lib/domain';
 import { BottomNav } from '@/components/BottomNav';
 import { cn } from '@/lib/utils';
 
@@ -14,22 +15,20 @@ interface CompareItem {
   cardId: string;
   cardZh: string;
   cardEn: string;
-  contextQuestion?: string;
+  prompt?: string;
   answers: {
     profileId: string;
     profileName: string;
-    statuses: StatusLabel[];
-    note?: string;
+    answer?: CardAnswerV2;
   }[];
 }
 
 function CompareContent() {
-  const router = useRouter();
   const searchParams = useSearchParams();
   const { profiles } = useApp();
 
   const profileIds = searchParams.get('profiles')?.split(',').filter(Boolean) || [];
-  const selectedProfiles = profiles.filter(p => profileIds.includes(p.id));
+  const selectedProfiles = profileIds.map(id => profiles.find(profile => profile.id === id)).filter((profile): profile is typeof profiles[number] => Boolean(profile));
 
   const [activeCategory, setActiveCategory] = useState(CATEGORIES[0]?.id || '');
 
@@ -46,24 +45,22 @@ function CompareContent() {
       const answers: CompareItem['answers'] = [];
 
       for (const profile of selectedProfiles) {
-        const progress = profile.progress.find(p => p.categoryId === activeCategory);
-        const answer = progress?.answers.find(a => a.cardId === card.id);
+        const answer = profile.answers[activeCategory]?.answers[card.id];
 
         answers.push({
           profileId: profile.id,
-          profileName: `${profile.fromName} ➔ ${profile.toName}`,
-          statuses: answer?.statuses || [],
-          note: answer?.note,
+          profileName: describePerspective(profile.direction.author.displayName, profile.direction.subject.displayName),
+          answer,
         });
       }
 
       // 只显示有至少一个回答的卡牌
-      if (answers.some(a => a.statuses.length > 0)) {
+      if (answers.some(a => isAnswerEffective(a.answer))) {
         items.push({
           cardId: card.id,
           cardZh: card.zh,
           cardEn: card.en,
-          contextQuestion: card.contextQuestion,
+          prompt: card.prompt,
           answers,
         });
       }
@@ -80,8 +77,7 @@ function CompareContent() {
       let count = 0;
       for (const card of category.cards) {
         const hasAnswer = selectedProfiles.some(profile => {
-          const progress = profile.progress.find(p => p.categoryId === category.id);
-          return progress?.answers.some(a => a.cardId === card.id && a.statuses.length > 0);
+          return isAnswerEffective(profile.answers[category.id]?.answers[card.id]);
         });
         if (hasAnswer) count++;
       }
@@ -90,6 +86,13 @@ function CompareContent() {
 
     return counts;
   }, [selectedProfiles]);
+
+  useEffect(() => {
+    if (!categoryCounts[activeCategory]) {
+      const firstWithData = CATEGORIES.find(category => categoryCounts[category.id] > 0);
+      if (firstWithData) setActiveCategory(firstWithData.id);
+    }
+  }, [activeCategory, categoryCounts]);
 
   if (selectedProfiles.length < 2) {
     return (
@@ -104,8 +107,6 @@ function CompareContent() {
       </div>
     );
   }
-
-  const currentCategory = getCategoryById(activeCategory);
 
   return (
     <div className="min-h-screen bg-[#F5F1EB] pb-20">
@@ -175,11 +176,12 @@ function CompareContent() {
                 <div className="p-4 bg-[#E8E2DA]/50 border-b border-[#E8E2DA]">
                   <h3 className="font-medium text-[#4A4A4A]">{item.cardZh}</h3>
                   <p className="text-xs text-[#6B6B6B]">{item.cardEn}</p>
-                  {item.contextQuestion && (
+                  {item.prompt && (
                     <p className="text-sm text-[#6B6B6B] mt-1 italic">
-                      &quot;{item.contextQuestion}&quot;
+                      &quot;{item.prompt}&quot;
                     </p>
                   )}
+                  <p className="text-xs text-[#6B6B6B] mt-2">{classifyComparison(item.answers.map(answer => answer.answer))}</p>
                 </div>
 
                 {/* Profile Answers */}
@@ -194,25 +196,24 @@ function CompareContent() {
                           {answer.profileName}
                         </p>
 
-                        {answer.statuses.length > 0 ? (
+                        {answer.answer && isAnswerEffective(answer.answer) ? (
                           <>
                             <div className="flex flex-wrap gap-1.5 mb-2">
-                              {answer.statuses.map((status) => {
-                                const config = STATUS_LABELS[status];
-                                return (
+                              {answer.answer.stance && (() => { const config = STANCE_LABELS[answer.answer.stance]; return (
                                   <span
-                                    key={status}
+                                    key={answer.answer.stance}
                                     className="px-2 py-1 rounded-lg text-xs font-medium text-white"
                                     style={{ backgroundColor: config.color }}
                                   >
                                     {config.zh}
                                   </span>
-                                );
-                              })}
+                                ); })()}
+                              {(answer.answer.markers || []).map(marker => <span key={marker} className="px-2 py-1 rounded-lg text-xs font-medium bg-[#E8E2DA] text-[#4A4A4A]">{MARKER_LABELS[marker]}</span>)}
+                              {answer.answer.participation && <span className="px-2 py-1 rounded-lg text-xs font-medium bg-[#E8F0F8] text-[#4A4A4A]">{({ self: '我会参与', other: '对方会参与', together: '共同参与', varies: '视情况而定' } as const)[answer.answer.participation]}</span>}
                             </div>
-                            {answer.note && (
+                            {answer.answer.note && (
                               <p className="text-sm text-[#6B6B6B] bg-white/50 rounded-lg p-2">
-                                📝 {answer.note}
+                                📝 {answer.answer.note}
                               </p>
                             )}
                           </>
