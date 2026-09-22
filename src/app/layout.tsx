@@ -11,6 +11,7 @@ import { AppProvider } from '@/context/AppContext';
 import { ThemeProvider } from '@/context/ThemeContext';
 import { LanguageProvider } from '@/context/LanguageContext';
 import { LanguageToggle } from '@/components/LanguageToggle';
+import { ThemeToggle } from '@/components/ThemeToggle';
 
 export const viewport: Viewport = {
   width: 'device-width',
@@ -57,6 +58,7 @@ export default function RootLayout({
               {children}
             </AppProvider>
             <LanguageToggle />
+            <ThemeToggle />
           </LanguageProvider>
         </ThemeProvider>
       </body>

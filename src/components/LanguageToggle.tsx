@@ -19,7 +19,7 @@ export function LanguageToggle() {
       title={t(`切换到${target}`)}
       className={cn(
         'fixed top-3 z-[70] flex items-center gap-1.5 rounded-full border border-border bg-card/95 px-3 py-2 text-xs font-medium text-foreground shadow-md backdrop-blur hover:border-primary hover:text-primary',
-        isCardPage ? 'left-14' : 'right-4'
+        isCardPage ? 'left-14' : 'right-16'
       )}
     >
       <Languages className="h-4 w-4" />

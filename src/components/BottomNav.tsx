@@ -2,14 +2,14 @@
 
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
-import { Compass, FolderOpen, Settings } from 'lucide-react';
+import { Compass, FolderOpen, Info } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { useLanguage } from '@/context/LanguageContext';
 
 const navItems = [
   { href: '/', icon: Compass, label: '探索' },
   { href: '/profiles', icon: FolderOpen, label: '档案' },
-  { href: '/settings', icon: Settings, label: '设置' },
+  { href: '/settings', icon: Info, label: '关于' },
 ];
 
 export function BottomNav() {

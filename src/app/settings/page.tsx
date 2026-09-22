@@ -7,27 +7,19 @@
 
 'use client';
 
-import { ExternalLink, Sun, Moon, Monitor, Download, Languages } from 'lucide-react';
+import { ExternalLink, Download } from 'lucide-react';
 import { BottomNav } from '@/components/BottomNav';
-import { useTheme } from '@/context/ThemeContext';
 import { useEffect, useState } from 'react';
 import { RECOVERY_KEY } from '@/lib/storageV2';
 import { useLanguage } from '@/context/LanguageContext';
 
 export default function SettingsPage() {
-  const { theme, setTheme } = useTheme();
-  const { t, locale, setLocale } = useLanguage();
+  const { t } = useLanguage();
   const [recoveryData, setRecoveryData] = useState<string | null>(null);
 
   useEffect(() => {
     setRecoveryData(window.localStorage.getItem(RECOVERY_KEY));
   }, []);
-
-  const themeOptions = [
-    { value: 'light' as const, label: '浅色', icon: Sun },
-    { value: 'dark' as const, label: '深色', icon: Moon },
-    { value: 'system' as const, label: '跟随系统', icon: Monitor },
-  ];
 
   const handleDownloadImage = () => {
     const link = document.createElement('a');
@@ -52,60 +44,12 @@ export default function SettingsPage() {
       {/* Header */}
       <header className="sticky top-0 z-40 bg-background/90 backdrop-blur-lg border-b border-border">
         <div className="max-w-2xl mx-auto px-4 py-4">
-          <h1 className="text-xl font-bold text-foreground">{t('设置')}</h1>
+          <h1 className="text-xl font-bold text-foreground">{t('关于')}</h1>
         </div>
       </header>
 
       {/* Main Content */}
       <main className="max-w-2xl mx-auto px-4 py-6">
-        {/* Theme Section */}
-        <section className="bg-card rounded-2xl p-5 mb-6 shadow-sm">
-          <h2 className="font-medium text-card-foreground mb-4">{t('主题')}</h2>
-
-          <div className="flex gap-2">
-            {themeOptions.map((option) => {
-              const Icon = option.icon;
-              return (
-                <button
-                  key={option.value}
-                  onClick={() => setTheme(option.value)}
-                  className={`
-                    flex-1 flex items-center justify-center gap-2 py-3 px-4 rounded-xl transition-all duration-200
-                    ${theme === option.value
-                      ? 'bg-primary text-primary-foreground'
-                      : 'bg-secondary text-secondary-foreground hover:bg-secondary/80'
-                    }
-                  `}
-                >
-                  <Icon className="w-4 h-4" />
-                  <span className="text-sm font-medium">{t(option.label)}</span>
-                </button>
-              );
-            })}
-          </div>
-        </section>
-
-        <section className="bg-card rounded-2xl p-5 mb-6 shadow-sm">
-          <h2 className="font-medium text-card-foreground mb-4 flex items-center gap-2">
-            <Languages className="w-4 h-4" />
-            {t('显示语言')}
-          </h2>
-          <div className="grid grid-cols-2 gap-2">
-            <button
-              onClick={() => setLocale('zh-CN')}
-              className={`py-3 px-4 rounded-xl text-sm font-medium transition-colors ${locale === 'zh-CN' ? 'bg-primary text-primary-foreground' : 'bg-secondary text-secondary-foreground hover:bg-secondary/80'}`}
-            >
-              简体中文
-            </button>
-            <button
-              onClick={() => setLocale('zh-TW')}
-              className={`py-3 px-4 rounded-xl text-sm font-medium transition-colors ${locale === 'zh-TW' ? 'bg-primary text-primary-foreground' : 'bg-secondary text-secondary-foreground hover:bg-secondary/80'}`}
-            >
-              繁體中文（台灣）
-            </button>
-          </div>
-        </section>
-
         {recoveryData && (
           <section className="bg-[#FFF4DD] border border-[#D4A84B]/40 rounded-2xl p-5 mb-6 shadow-sm">
             <h2 className="font-medium text-[#6B4F18] mb-2">{t('发现未完成的迁移')}</h2>
@@ -116,7 +60,7 @@ export default function SettingsPage() {
 
         {/* About Section */}
         <section className="bg-card rounded-2xl p-5 mb-6 shadow-sm">
-          <h2 className="font-medium text-card-foreground mb-4">{t('关于')}</h2>
+          <h2 className="font-medium text-card-foreground mb-4">{t('这个工具')}</h2>
 
           <div className="space-y-4">
             <div>
