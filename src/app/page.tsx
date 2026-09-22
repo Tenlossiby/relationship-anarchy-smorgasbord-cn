@@ -1,5 +1,5 @@
 /**
- * 关系安那其拼盘 (Relationship Anarchy Smörgåsbord)
+ * 关系安那其主义自助拼盘 (Relationship Anarchy Smörgåsbord)
  *
  * Copyright (c) 2025 Tenlossiby
  * Licensed under MIT License
@@ -59,7 +59,7 @@ export default function HomePage() {
       <header className="sticky top-0 z-40 bg-background/90 backdrop-blur-lg border-b border-border">
         <div className="max-w-2xl mx-auto px-4 py-4">
           <h1 className="text-xl font-bold text-foreground text-center">
-            {t('关系安那其拼盘')}
+            {t('关系安那其主义自助拼盘')}
           </h1>
           <p className="text-sm text-muted-foreground text-center mt-1">
             {t('选择你感兴趣的类别，开始探索')}

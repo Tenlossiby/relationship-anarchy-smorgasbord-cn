@@ -87,7 +87,7 @@ export const exportProfileToText = (profile: ProfileV2, includesNotes = true, lo
   const envelope = createEnvelope(profile, includesNotes);
   const t = (text: string) => localizeText(text, locale);
   return [
-    t('关系安那其拼盘 - 关系档案'),
+    t('关系安那其主义自助拼盘 - 关系档案'),
     '',
     `${t('档案')}：${profile.title}`,
     `${t('填写视角')}：${describePerspectiveForLocale(profile.direction.author.displayName, profile.direction.subject.displayName, locale)}`,

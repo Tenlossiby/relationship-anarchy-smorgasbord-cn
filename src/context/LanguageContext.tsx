@@ -2,7 +2,7 @@
 
 import React, { createContext, useCallback, useContext, useEffect, useMemo, useState } from 'react';
 import type { Category } from '@/types';
-import { DEFAULT_LOCALE, LOCALE_STORAGE_KEY, describePerspectiveForLocale, localizeCategory, localizeRelationLabel, localizeText, parseLocale, type AppLocale } from '@/lib/i18n';
+import { BRAND_NAME, DEFAULT_LOCALE, LOCALE_STORAGE_KEY, describePerspectiveForLocale, localizeCategory, localizeRelationLabel, localizeText, parseLocale, type AppLocale } from '@/lib/i18n';
 
 interface LanguageContextValue {
   locale: AppLocale;
@@ -35,7 +35,7 @@ export function LanguageProvider({ children }: { children: React.ReactNode }) {
 
   useEffect(() => {
     document.documentElement.lang = locale;
-    const title = localizeText('关系安那其拼盘', locale);
+    const title = localizeText(BRAND_NAME, locale);
     document.title = title;
     const observer = new MutationObserver(() => {
       if (document.title !== title) document.title = title;

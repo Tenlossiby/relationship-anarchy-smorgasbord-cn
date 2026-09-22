@@ -113,7 +113,7 @@ export const exportProfileToText = (profile: Profile): string => {
   
   // 头部信息
   lines.push('═══════════════════════════════════════════════════');
-  lines.push('     关系安那其拼盘 - 关系档案');
+  lines.push('     关系安那其主义自助拼盘 - 关系档案');
   lines.push('═══════════════════════════════════════════════════');
   lines.push('');
   lines.push(`📋 档案名称：${profile.name}`);
@@ -222,7 +222,7 @@ export const generateShareCode = (profile: Profile): string => {
     exportedAt: new Date().toISOString(),
   };
   const encoded = btoa(encodeURIComponent(JSON.stringify(exportData)));
-  return `💌 关系安那其拼盘 - ${profile.name}\n\n请复制下方口令导入档案：\n\n---RAS_DATA_START---\n${encoded}\n---RAS_DATA_END---`;
+  return `💌 关系安那其主义自助拼盘 - ${profile.name}\n\n请复制下方口令导入档案：\n\n---RAS_DATA_START---\n${encoded}\n---RAS_DATA_END---`;
 };
 
 // 从剪贴口令导入

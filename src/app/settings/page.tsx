@@ -1,5 +1,5 @@
 /**
- * 关系安那其拼盘 (Relationship Anarchy Smörgåsbord)
+ * 关系安那其主义自助拼盘 (Relationship Anarchy Smörgåsbord)
  *
  * Copyright (c) 2025 Tenlossiby
  * Licensed under MIT License
@@ -33,7 +33,7 @@ export default function SettingsPage() {
   const handleDownloadImage = () => {
     const link = document.createElement('a');
     link.href = '/ra-smorgasbord-cn.png';
-    link.download = `${t('关系安那其拼盘')}_${t('中文版')}.png`;
+    link.download = `${t('关系安那其主义自助拼盘')}_${t('中文版')}.png`;
     document.body.appendChild(link);
     link.click();
     document.body.removeChild(link);
@@ -125,12 +125,12 @@ export default function SettingsPage() {
 
         {/* About Section */}
         <section className="bg-card rounded-2xl p-5 mb-6 shadow-sm">
-          <h2 className="font-medium text-card-foreground mb-4">{t('这个工具')}</h2>
+          <h2 className="font-medium text-card-foreground mb-4">{t('用于协商的工具')}</h2>
 
           <div className="space-y-4">
             <div>
               <h3 className="font-bold text-card-foreground text-lg mb-1">
-                {t('关系安那其拼盘')}
+                {t('关系安那其主义自助拼盘')}
               </h3>
               <p className="text-sm text-muted-foreground">
                 Relationship Anarchy Smörgåsbord
@@ -155,7 +155,7 @@ export default function SettingsPage() {
             <p>• {t('不要在对方不知情的情况下偷偷加入「菜品」（期待）')}</p>
             <p>• {t('这是你们自己的「拼盘」——如果想调整，完全没问题')}</p>
             <p>• {t('定期导出档案备份，避免数据丢失')}</p>
-            <p>• {t('别人分享来的档案会按对方填写时的视角呈现；想接着填写，可以创建一份自己的副本')}</p>
+            <p>• {t('别人分享来的档案会按对方填写时的视角呈现；想接着填写，可以创建一份自己的档案')}</p>
           </div>
         </section>
 
@@ -166,7 +166,7 @@ export default function SettingsPage() {
           <div className="space-y-2 text-sm text-muted-foreground">
             <p>🔒 {t('所有数据均存储在您的浏览器本地；本地保存不等于设备加密。')}</p>
             <p>🔒 {t('导出文件中的 Base64 只是编码，不是加密；分享前请确认其中可能含有敏感备注。')}</p>
-            <p>🔒 {t('我们不会收集或上传个人回答；清除浏览器数据可能删除本地档案，请先备份。')}</p>
+            <p>🔒 {t('该应用及开发者不会收集或上传个人回答；清除浏览器数据可能删除本地档案，请先备份。')}</p>
           </div>
         </section>
 
@@ -185,13 +185,13 @@ export default function SettingsPage() {
 
           <div className="space-y-3">
             <p className="text-sm text-muted-foreground">
-              {t('这是关系安那其拼盘的完整中文版图表，包含所有 28 个类别的详细内容。你可以下载这张图片用于个人讨论或打印使用。')}
+              {t('这是关系安那其主义自助拼盘的完整中文版图表，包含所有 28 个类别的详细内容。你可以下载这张图片用于个人讨论或打印使用。')}
             </p>
 
             <div className="relative w-full bg-secondary rounded-xl overflow-hidden">
               <img
                 src="/ra-smorgasbord-cn.png"
-                alt={t('关系安那其拼盘中文版')}
+                alt={t('关系安那其主义自助拼盘中文版')}
                 className="w-full h-auto"
                 onClick={handleDownloadImage}
                 style={{ cursor: 'pointer' }}

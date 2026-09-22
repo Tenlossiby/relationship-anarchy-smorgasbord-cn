@@ -5,8 +5,8 @@ export type AppLocale = 'zh-CN' | 'zh-TW';
 
 export const DEFAULT_LOCALE: AppLocale = 'zh-CN';
 export const LOCALE_STORAGE_KEY = 'ra_display_locale';
-export const BRAND_NAME = '关系安那其拼盘';
-export const BRAND_NAME_TW = '關係安那其拼盤';
+export const BRAND_NAME = '关系安那其主义自助拼盘';
+export const BRAND_NAME_TW = '關係安那其主義自助拼盤';
 
 const toTaiwan = OpenCC.Converter({ from: 'cn', to: 'twp' });
 
@@ -14,7 +14,8 @@ const toTaiwan = OpenCC.Converter({ from: 'cn', to: 'twp' });
 // product language consistent with everyday Taiwan usage.
 const taiwanPhraseOverrides: Array<[string, string]> = [
   ['所有数据均存储在您的浏览器本地；本地保存不等于设备加密。', '所有資料都儲存在這台裝置的瀏覽器中；存放在瀏覽器中，不代表裝置本身有加密。'],
-  ['我们不会收集或上传个人回答；清除浏览器数据可能删除本地档案，请先备份。', '我們不會收集或上傳個人回答；清除瀏覽器資料可能會刪除本機檔案，請先備份。'],
+  ['该应用及开发者不会收集或上传个人回答；清除浏览器数据可能删除本地档案，请先备份。', '該應用程式與開發者不會收集或上傳個人回答；清除瀏覽器資料可能會刪除本機檔案，請先備份。'],
+  ['别人分享来的档案会按对方填写时的视角呈现；想接着填写，可以创建一份自己的档案', '別人分享給你的檔案，會保留對方填寫時的視角；想繼續填寫，可以建立一份自己的檔案'],
   ['支持 .txt 格式', '支援 .txt 格式'],
   ['支持网络', '支持系統'],
   ['怎样避免帮助变成控制、亏欠或默认义务？', '怎麼避免讓幫忙變成控制、虧欠，或理所當然的義務？'],
@@ -26,9 +27,10 @@ const taiwanPhraseOverrides: Array<[string, string]> = [
   ['怎样避免默认规则？', '怎麼避免形成不成文的規則？'],
   ['默认权力', '不言明的權力'],
   ['如何被说出来？', '要怎麼把它們說清楚？'],
-  ['关系安那其自助拼盘', '關係安那其拼盤'],
-  ['关系安那其拼盘', '關係安那其拼盤'],
-  ['RA拼盘', '關係安那其拼盤'],
+  ['关系安那其主义自助拼盘', '關係安那其主義自助拼盤'],
+  ['关系安那其自助拼盘', '關係安那其主義自助拼盤'],
+  ['关系安那其拼盘', '關係安那其主義自助拼盤'],
+  ['RA拼盘', '關係安那其主義自助拼盤'],
   ['剪贴板', '剪貼簿'],
   ['本地存储', '本機儲存空間'],
   ['本地处理', '在本機處理'],

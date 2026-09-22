@@ -1,5 +1,5 @@
 /**
- * 关系安那其拼盘 (Relationship Anarchy Smörgåsbord)
+ * 关系安那其主义自助拼盘 (Relationship Anarchy Smörgåsbord)
  *
  * Copyright (c) 2025 Tenlossiby
  * Licensed under MIT License
@@ -19,8 +19,8 @@ export const viewport: Viewport = {
 
 export const metadata: Metadata = {
   title: {
-    default: '关系安那其拼盘',
-    template: '%s | 关系安那其拼盘',
+    default: '关系安那其主义自助拼盘',
+    template: '%s | 关系安那其主义自助拼盘',
   },
   description:
     '一个多元包容的关系探索工具，帮助你和伙伴发现和记录动态的关系模式。',
@@ -47,7 +47,7 @@ export default function RootLayout({
         <link rel="apple-touch-icon" href="/apple-touch-icon.png" sizes="192x192" />
         <meta name="apple-mobile-web-app-capable" content="yes" />
         <meta name="apple-mobile-web-app-status-bar-style" content="default" />
-        <meta name="apple-mobile-web-app-title" content="关系安那其拼盘" />
+        <meta name="apple-mobile-web-app-title" content="关系安那其" />
       </head>
       <body className={`antialiased`}>
         <ThemeProvider>

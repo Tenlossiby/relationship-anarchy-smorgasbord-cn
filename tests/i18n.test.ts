@@ -11,8 +11,8 @@ import {
 
 describe('Taiwan Traditional Chinese display', () => {
   it('uses the requested full product name', () => {
-    expect(BRAND_NAME).toBe('关系安那其拼盘');
-    expect(BRAND_NAME_TW).toBe('關係安那其拼盤');
+    expect(BRAND_NAME).toBe('关系安那其主义自助拼盘');
+    expect(BRAND_NAME_TW).toBe('關係安那其主義自助拼盤');
   });
 
   it('uses common Taiwan interface terms', () => {

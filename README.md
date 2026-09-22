@@ -1,4 +1,4 @@
-# 关系安那其拼盘 (Relationship Anarchy Smörgåsbord)
+# 关系安那其主义自助拼盘 (Relationship Anarchy Smörgåsbord)
 
 <div align="center">
 
@@ -18,7 +18,7 @@
 
 ## 📖 项目简介
 
-关系安那其拼盘（Relationship Anarchy Smörgåsbord）是一个帮助人们探索和定义关系的工具。你与对方可以从任意"菜单"中挑选任意数量的"菜品"，无论是一大份，还是只选一点点。你们共同选择的那些"菜品"，就是你们的关系。
+关系安那其主义自助拼盘（Relationship Anarchy Smörgåsbord）是一个帮助人们探索和定义关系的工具。你与对方可以从任意"菜单"中挑选任意数量的"菜品"，无论是一大份，还是只选一点点。你们共同选择的那些"菜品"，就是你们的关系。
 
 ### 💡 核心理念
 
