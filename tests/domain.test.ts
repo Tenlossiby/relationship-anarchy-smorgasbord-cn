@@ -1,5 +1,6 @@
 import { describe, expect, it } from 'vitest';
-import { classifyComparison, createEnvelope, createProfile, decodeEnvelope, describePerspective, encodeEnvelope, isAnswerEffective, migrateLegacyStatuses, migrateV1Profile } from '@/lib/domain';
+import { classifyComparison, createEnvelope, createProfile, decodeEnvelope, describePerspective, encodeEnvelope, getAnswerStatuses, isAnswerEffective, migrateLegacyStatuses, migrateV1Profile, SUGGESTED_STATUS_VALUES } from '@/lib/domain';
+import { STATUS_LABELS } from '@/types';
 import { CATEGORIES } from '@/data/categories';
 import { directionAB, directionBA, legacyExpoText, legacyV1Text, v1Contradictory } from './fixtures';
 import { exportProfileToText, getProfiles, hasDuplicateExport, importLegacyExpoProfile, importProfileFromText } from '@/lib/storageV2';
@@ -43,11 +44,12 @@ describe('answer semantics', () => {
     expect(isAnswerEffective({})).toBe(false);
   });
 
-  it('preserves contradictory V1 statuses for review', () => {
+  it('preserves every original V1 status without forcing them into one stance', () => {
     const migratedProfile = migrateV1Profile(v1Contradictory);
     const migrated = migratedProfile.answers.caregiving.answers['caregiving-health'];
+    expect(migrated?.statuses).toEqual(['agree', 'hard_limit']);
     expect(migrated?.legacy?.rawStatuses).toEqual(['agree', 'hard_limit']);
-    expect(migrated?.legacy?.needsReview).toBe(true);
+    expect(migrated?.legacy?.needsReview).toBe(false);
   });
 
   it('maps real old Expo data, keeps unmatched items, and creates a read-only import', () => {
@@ -59,11 +61,10 @@ describe('answer semantics', () => {
     expect(migrated?.direction.subject.displayName).toBe('B');
     expect(migrated?.permissions.editable).toBe(false);
     expect(migrated?.provenance.kind).toBe('imported');
-    expect(migrated?.answers.caregiving.answers['caregiving-health']?.stance).toBe('want');
+    expect(migrated?.answers.caregiving.answers['caregiving-health']?.statuses).toEqual(['agree', 'necessary', 'future_possible', 'need_discussion']);
     expect(migrated?.answers.caregiving.answers['caregiving-health']?.note).toBe('需要提前说清楚');
-    expect(migrated?.answers.caregiving.answers['caregiving-health']?.markers).toEqual(['important', 'future_possible', 'need_discussion']);
-    expect(migrated?.answers.caregiving.answers['caregiving-sponsorship']?.stance).toBe('not_for_me');
-    expect(migrated?.answers.caregiving.answers['caregiving-sponsorship']?.legacy?.needsReview).toBe(true);
+    expect(migrated?.answers.caregiving.answers['caregiving-sponsorship']?.statuses).toEqual(['absolutely_not', 'hard_limit']);
+    expect(migrated?.answers.caregiving.answers['caregiving-sponsorship']?.legacy?.needsReview).toBe(false);
     expect(migrated?.legacy?.unmappedItems).toHaveLength(1);
     const imported = importLegacyExpoProfile(legacyExpoText, 'A', 'B');
     expect(imported && hasDuplicateExport(legacyExpoText, [imported])).toBe(true);
@@ -98,27 +99,36 @@ describe('answer semantics', () => {
 
   it('preserves raw contradictory statuses', () => {
     const migrated = migrateLegacyStatuses(['agree', 'hard_limit']);
+    expect(migrated.statuses).toEqual(['agree', 'hard_limit']);
     expect(migrated.legacy?.rawStatuses).toEqual(['agree', 'hard_limit']);
-    expect(migrated.legacy?.needsReview).toBe(true);
+    expect(migrated.legacy?.needsReview).toBe(false);
   });
 
-  it('does not convert will_do into a stance', () => {
+  it('keeps legacy participation separate from the original seven markers', () => {
     const migrated = migrateLegacyStatuses(['will_do']);
-    expect(migrated.stance).toBeUndefined();
+    expect(migrated.statuses).toEqual([]);
     expect(migrated.participation).toBe('self');
     expect(migrated.legacy?.needsReview).toBe(false);
+  });
+
+  it('restores the original translated labels and keeps them multi-select', () => {
+    expect(SUGGESTED_STATUS_VALUES.map(status => STATUS_LABELS[status].zh)).toEqual([
+      '同意', '必要', '也许', '未来可能', '需要讨论', '绝对不行', '硬性界限',
+    ]);
+    expect(getAnswerStatuses({ statuses: ['agree', 'necessary', 'maybe'] })).toEqual(['agree', 'necessary', 'maybe']);
+    expect(getAnswerStatuses({ stance: 'want', markers: ['important', 'future_possible'] })).toEqual(['agree', 'necessary', 'future_possible']);
   });
 });
 
 describe('comparison description', () => {
   it('does not turn hard limits into a relationship verdict', () => {
-    expect(classifyComparison([{ stance: 'want' }, { stance: 'hard_limit' }])).toBe('值得聊聊');
+    expect(classifyComparison([{ statuses: ['agree'] }, { statuses: ['hard_limit'] }])).toBe('值得聊聊');
     expect(classifyComparison([{ note: '语境' }, undefined])).toBe('有人未回答');
-    expect(classifyComparison([{ stance: 'want' }, { stance: 'want' }])).toBe('相近');
+    expect(classifyComparison([{ statuses: ['agree'] }, { statuses: ['agree'] }])).toBe('相近');
     expect(classifyComparison([{ note: '我的语境' }, { note: '对方的语境' }])).toBe('都有备注');
-    expect(classifyComparison([{ stance: 'want', participation: 'self' }, { stance: 'want', participation: 'other' }])).toBe('有所不同');
-    expect(classifyComparison([{ note: '我的语境' }, { stance: 'want' }])).not.toBe('相近');
-    expect(classifyComparison([{ note: '我的语境', stance: 'want' }, { note: '对方语境', stance: 'hard_limit' }])).toBe('值得聊聊');
+    expect(classifyComparison([{ statuses: ['agree'], participation: 'self' }, { statuses: ['agree'], participation: 'other' }])).toBe('有所不同');
+    expect(classifyComparison([{ note: '我的语境' }, { statuses: ['agree'] }])).not.toBe('相近');
+    expect(classifyComparison([{ note: '我的语境', statuses: ['agree'] }, { note: '对方语境', statuses: ['hard_limit'] }])).toBe('值得聊聊');
   });
 });
 

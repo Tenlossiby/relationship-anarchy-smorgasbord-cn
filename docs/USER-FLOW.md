@@ -225,7 +225,7 @@ flowchart LR
 
 **功能**：
 - 逐张显示类别中的卡牌
-- 分开填写单选立场、多选补充标记和可选行动者
+- 使用原译版的七种可多选标记，并可按需补充行动者
 - 添加备注
 - 上一张/下一张导航
 - 跳过/保存功能
@@ -370,8 +370,7 @@ interface CategoryProgressV2 {
 
 interface CardAnswerV2 {
   cardId: string;
-  stance?: 'want' | 'open' | 'unsure' | 'not_for_me' | 'hard_limit';
-  markers?: ('important' | 'future_possible' | 'need_discussion')[];
+  statuses?: ('agree' | 'necessary' | 'maybe' | 'future_possible' | 'need_discussion' | 'absolutely_not' | 'hard_limit')[];
   participation?: 'self' | 'other' | 'together' | 'varies';
   note?: string;
 }

@@ -6,7 +6,8 @@ import Link from 'next/link';
 import { ArrowLeft, ChevronLeft, ChevronRight, Check } from 'lucide-react';
 import { useApp } from '@/context/AppContext';
 import { getCategoryById } from '@/data/categories';
-import { STANCE_LABELS, MARKER_LABELS, Stance, AnswerMarker, Participation, Profile } from '@/types';
+import { STATUS_LABELS, StatusLabel, Participation, Profile } from '@/types';
+import { getAnswerStatuses, SUGGESTED_STATUS_VALUES } from '@/lib/domain';
 import { updateCardAnswer, getAnswer, getProfile, markCardViewed } from '@/lib/storageV2';
 import { cn } from '@/lib/utils';
 
@@ -24,8 +25,7 @@ function CardDiscussionContent() {
   const category = getCategoryById(categoryId);
 
   const [currentIndex, setCurrentIndex] = useState(0);
-  const [stance, setStance] = useState<Stance | undefined>();
-  const [markers, setMarkers] = useState<AnswerMarker[]>([]);
+  const [selectedStatuses, setSelectedStatuses] = useState<StatusLabel[]>([]);
   const [participation, setParticipation] = useState<Participation | undefined>();
   const [note, setNote] = useState('');
   const [isSaving, setIsSaving] = useState(false);
@@ -38,7 +38,7 @@ function CardDiscussionContent() {
     if (profile && category) {
       // 加载当前卡牌的已有回答
       const cardAnswer = getAnswer(profile, categoryId, category.cards[currentIndex]?.id);
-      setStance(cardAnswer?.stance); setMarkers(cardAnswer?.markers || []); setParticipation(cardAnswer?.participation); setNote(cardAnswer?.note || '');
+      setSelectedStatuses(getAnswerStatuses(cardAnswer)); setParticipation(cardAnswer?.participation); setNote(cardAnswer?.note || '');
     }
   }, [profile, category, currentIndex, categoryId]);
 
@@ -46,11 +46,11 @@ function CardDiscussionContent() {
     if (!profile?.permissions.editable || !category) return;
     const card = category.cards[currentIndex];
     if (!card) return;
-    const persistOnLeave = () => updateCardAnswer(profileId, categoryId, { cardId: card.id, stance, markers, participation, note, updatedAt: new Date().toISOString() });
+    const persistOnLeave = () => updateCardAnswer(profileId, categoryId, { cardId: card.id, statuses: selectedStatuses, participation, note, updatedAt: new Date().toISOString() });
     window.addEventListener('pagehide', persistOnLeave);
     window.addEventListener('beforeunload', persistOnLeave);
     return () => { window.removeEventListener('pagehide', persistOnLeave); window.removeEventListener('beforeunload', persistOnLeave); };
-  }, [profile, category, currentIndex, profileId, categoryId, stance, markers, participation, note]);
+  }, [profile, category, currentIndex, profileId, categoryId, selectedStatuses, participation, note]);
 
   if (!profile || !category) {
     return (
@@ -67,13 +67,13 @@ function CardDiscussionContent() {
 
   const persistCurrent = () => {
     if (isReadOnly) return;
-    updateCardAnswer(profileId, categoryId, { cardId: currentCard.id, stance, markers, participation, note, updatedAt: new Date().toISOString() });
+    updateCardAnswer(profileId, categoryId, { cardId: currentCard.id, statuses: selectedStatuses, participation, note, updatedAt: new Date().toISOString() });
     const savedProfile = getProfile(profileId);
     if (savedProfile) setProfile(savedProfile);
     refreshProfiles();
   };
 
-  const toggleMarker = (marker: AnswerMarker) => setMarkers(prev => prev.includes(marker) ? prev.filter(item => item !== marker) : [...prev, marker]);
+  const toggleStatus = (status: StatusLabel) => setSelectedStatuses(prev => prev.includes(status) ? prev.filter(item => item !== status) : [...prev, status]);
 
   const saveAndNext = async () => {
     if (isReadOnly) return;
@@ -145,9 +145,6 @@ function CardDiscussionContent() {
       setCurrentIndex(currentIndex + 1);
     }
   };
-
-  const stanceList: Stance[] = ['want', 'open', 'unsure', 'not_for_me', 'hard_limit'];
-  const markerList: AnswerMarker[] = ['important', 'future_possible', 'need_discussion'];
 
   return (
     <div className="min-h-screen bg-[#F5F1EB] pb-32">
@@ -240,9 +237,9 @@ function CardDiscussionContent() {
           </button>
         </div>
 
-        {/* V2 answer axes */}
+        {/* Suggested marking method from the original translation */}
         <div className="mb-6">
-          <p className="text-sm text-[#6B6B6B] mb-3">你对此的基本态度（单选）</p>
+          <p className="text-sm text-[#6B6B6B] mb-3">建议标记方式（可多选）</p>
 
           {/* Definition & Communication Hint */}
           <div className="bg-[#E8F2E6] rounded-xl p-4 mb-4 border border-[#7A9B76]/20">
@@ -253,14 +250,15 @@ function CardDiscussionContent() {
           </div>
 
           <div className="grid grid-cols-2 gap-2">
-            {stanceList.map((value) => {
-              const config = STANCE_LABELS[value];
-              const isSelected = stance === value;
+            {SUGGESTED_STATUS_VALUES.map((status) => {
+              const config = STATUS_LABELS[status];
+              const isSelected = selectedStatuses.includes(status);
 
               return (
                 <button
-                  key={value}
-                  onClick={() => setStance(value)} disabled={isReadOnly}
+                  key={status}
+                  onClick={() => toggleStatus(status)} disabled={isReadOnly}
+                  aria-pressed={isSelected}
                   className={cn(
                     'flex items-center justify-between px-4 py-3 rounded-xl text-sm font-medium transition-all',
                     isSelected
@@ -273,13 +271,6 @@ function CardDiscussionContent() {
                   {isSelected && <Check className="w-4 h-4" />}
                 </button>
               );
-            })}
-          </div>
-          <p className="text-sm text-[#6B6B6B] mt-5 mb-3">补充标记（可多选）</p>
-          <div className="grid grid-cols-2 gap-2">
-            {markerList.map((marker) => {
-              const isSelected = markers.includes(marker);
-              return <button key={marker} onClick={() => toggleMarker(marker)} disabled={isReadOnly} aria-pressed={isSelected} className={cn('flex items-center justify-between px-4 py-3 rounded-xl text-sm font-medium transition-all', isSelected ? 'bg-[#5BA0A0] text-white shadow-md' : 'bg-white text-[#4A4A4A] border border-[#D9D4CC] hover:border-[#7A9B76]')}><span>{MARKER_LABELS[marker]}</span>{isSelected && <Check className="w-4 h-4" />}</button>;
             })}
           </div>
           <label className="block text-sm text-[#6B6B6B] mt-5 mb-2" htmlFor="participation">如果需要区分行动者</label>
@@ -317,7 +308,7 @@ function CardDiscussionContent() {
               disabled={isSaving}
               className={cn(
                 'flex-1 py-4 rounded-2xl font-medium text-white transition-all',
-              Boolean(stance || markers.length || participation || note.trim())
+              Boolean(selectedStatuses.length || participation || note.trim())
                   ? 'bg-[#7A9B76] hover:bg-[#5A7B56]'
                   : 'bg-[#C5BEB3]'
               )}

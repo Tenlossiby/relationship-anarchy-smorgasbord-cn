@@ -7,8 +7,8 @@ import { useApp } from '@/context/AppContext';
 import { CATEGORIES, getTotalCards } from '@/data/categories';
 import { exportProfileToText, generateShareCode } from '@/lib/storageV2';
 import { BottomNav } from '@/components/BottomNav';
-import { MARKER_LABELS, STANCE_LABELS, type CardAnswerV2 } from '@/types';
-import { describePerspective } from '@/lib/domain';
+import { STATUS_LABELS, type CardAnswerV2 } from '@/types';
+import { describePerspective, getAnswerStatuses, isAnswerEffective } from '@/lib/domain';
 
 export default function ProfileDetailPage() {
   const router = useRouter();
@@ -79,7 +79,7 @@ export default function ProfileDetailPage() {
       if (!category) return;
 
       Object.values(catProgress.answers).forEach(answer => {
-        if (answer.stance || answer.participation || answer.markers?.length || answer.note) {
+        if (isAnswerEffective(answer)) {
           const card = category.cards.find(c => c.id === answer.cardId);
           if (card) {
             answers.push({
@@ -193,11 +193,10 @@ export default function ProfileDetailPage() {
                       <div className="text-sm font-medium text-[#4A4A4A]">{answer.card.zh}</div>
                     </div>
                   </div>
-                  {(answer.answer.stance || answer.answer.participation || answer.answer.markers?.length || answer.answer.legacy?.needsReview) && (
+                  {(getAnswerStatuses(answer.answer).length || answer.answer.participation || answer.answer.legacy?.needsReview) && (
                     <div className="flex flex-wrap gap-2 mt-2">
-                      {answer.answer.stance && <span className="px-3 py-1 rounded-full text-xs text-white" style={{ backgroundColor: STANCE_LABELS[answer.answer.stance].color }}>{STANCE_LABELS[answer.answer.stance].zh}</span>}
+                      {getAnswerStatuses(answer.answer).map(status => <span key={status} className="px-3 py-1 rounded-full text-xs text-white" style={{ backgroundColor: STATUS_LABELS[status].color }}>{STATUS_LABELS[status].zh}</span>)}
                       {answer.answer.participation && <span className="px-3 py-1 rounded-full text-xs bg-[#E8F0F8] text-[#4A4A4A]">{({ self: '我会参与', other: '对方会参与', together: '共同参与', varies: '视情况而定' } as const)[answer.answer.participation]}</span>}
-                      {(answer.answer.markers || []).map(marker => <span key={marker} className="px-3 py-1 rounded-full text-xs bg-[#E8E2DA] text-[#4A4A4A]">{MARKER_LABELS[marker]}</span>)}
                       {answer.answer.legacy?.needsReview && <span className="px-3 py-1 rounded-full text-xs bg-[#F7E7C6] text-[#8A641D]">旧状态需要复核</span>}
                     </div>
                   )}

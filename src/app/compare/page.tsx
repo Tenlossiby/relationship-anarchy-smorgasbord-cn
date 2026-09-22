@@ -6,8 +6,8 @@ import Link from 'next/link';
 import { ArrowLeft } from 'lucide-react';
 import { useApp } from '@/context/AppContext';
 import { CATEGORIES, getCategoryById } from '@/data/categories';
-import { STANCE_LABELS, MARKER_LABELS, CardAnswerV2 } from '@/types';
-import { classifyComparison, describePerspective, isAnswerEffective } from '@/lib/domain';
+import { STATUS_LABELS, CardAnswerV2 } from '@/types';
+import { classifyComparison, describePerspective, getAnswerStatuses, isAnswerEffective } from '@/lib/domain';
 import { BottomNav } from '@/components/BottomNav';
 import { cn } from '@/lib/utils';
 
@@ -189,6 +189,7 @@ function CompareContent() {
                   {item.answers.map((answer, idx) => {
                     const profileColors = ['#E8F5E8', '#E8F0F8', '#F3E8F5', '#F5F0E8', '#E8F5F3'];
                     const bgColor = profileColors[idx % profileColors.length];
+                    const statuses = getAnswerStatuses(answer.answer);
 
                     return (
                       <div key={answer.profileId} className="p-4" style={{ backgroundColor: bgColor }}>
@@ -199,16 +200,15 @@ function CompareContent() {
                         {answer.answer && isAnswerEffective(answer.answer) ? (
                           <>
                             <div className="flex flex-wrap gap-1.5 mb-2">
-                              {answer.answer.stance && (() => { const config = STANCE_LABELS[answer.answer.stance]; return (
+                              {statuses.map(status => { const config = STATUS_LABELS[status]; return (
                                   <span
-                                    key={answer.answer.stance}
+                                    key={status}
                                     className="px-2 py-1 rounded-lg text-xs font-medium text-white"
                                     style={{ backgroundColor: config.color }}
                                   >
                                     {config.zh}
                                   </span>
-                                ); })()}
-                              {(answer.answer.markers || []).map(marker => <span key={marker} className="px-2 py-1 rounded-lg text-xs font-medium bg-[#E8E2DA] text-[#4A4A4A]">{MARKER_LABELS[marker]}</span>)}
+                                ); })}
                               {answer.answer.participation && <span className="px-2 py-1 rounded-lg text-xs font-medium bg-[#E8F0F8] text-[#4A4A4A]">{({ self: '我会参与', other: '对方会参与', together: '共同参与', varies: '视情况而定' } as const)[answer.answer.participation]}</span>}
                             </div>
                             {answer.answer.note && (

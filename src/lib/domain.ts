@@ -1,5 +1,5 @@
 import { z } from 'zod';
-import type { AnswerMarker, CardAnswerV2, ExportEnvelopeV2, LegacyExpoProfile, LegacyV1Profile, Participation, ProfileV2, Stance } from '@/types';
+import type { CardAnswerV2, ExportEnvelopeV2, LegacyExpoProfile, LegacyV1Profile, Participation, ProfileV2, StatusLabel } from '@/types';
 import { CATEGORIES } from '@/data/categories';
 
 export const MAX_IMPORT_CHARS = 500_000;
@@ -8,37 +8,53 @@ export const CONTENT_VERSION = 'v2.0.0';
 const stanceValues = ['want', 'open', 'unsure', 'not_for_me', 'hard_limit'] as const;
 const markerValues = ['important', 'future_possible', 'need_discussion'] as const;
 const participationValues = ['self', 'other', 'together', 'varies'] as const;
+const statusValues = ['agree', 'necessary', 'maybe', 'future_possible', 'need_discussion', 'absolutely_not', 'hard_limit', 'will_do', 'they_will', 'together', 'unwilling'] as const;
+export const SUGGESTED_STATUS_VALUES: StatusLabel[] = ['agree', 'necessary', 'maybe', 'future_possible', 'need_discussion', 'absolutely_not', 'hard_limit'];
+const suggestedStatusSet = new Set<string>(SUGGESTED_STATUS_VALUES);
 
-const answerSchema = z.object({ cardId: z.string().min(1), stance: z.enum(stanceValues).optional(), markers: z.array(z.enum(markerValues)).max(3).optional(), participation: z.enum(participationValues).optional(), note: z.string().max(MAX_NOTE_CHARS).optional(), updatedAt: z.string().datetime(), legacy: z.object({ rawStatuses: z.array(z.string()), needsReview: z.boolean() }).optional() });
+const answerSchema = z.object({ cardId: z.string().min(1), statuses: z.array(z.enum(statusValues)).max(11).optional(), stance: z.enum(stanceValues).optional(), markers: z.array(z.enum(markerValues)).max(3).optional(), participation: z.enum(participationValues).optional(), note: z.string().max(MAX_NOTE_CHARS).optional(), updatedAt: z.string().datetime(), legacy: z.object({ rawStatuses: z.array(z.string()), needsReview: z.boolean() }).optional() });
 const profileSchema = z.object({ schemaVersion: z.literal(2), id: z.string().min(1), title: z.string().min(1), direction: z.object({ author: z.object({ id: z.string().min(1), displayName: z.string() }), subject: z.object({ id: z.string().min(1), displayName: z.string() }) }), relationLabels: z.array(z.string()), selectedCategoryIds: z.array(z.string()), answers: z.record(z.string(), z.object({ categoryId: z.string(), answers: z.record(z.string(), answerSchema), viewedCardIds: z.array(z.string()).optional() })), provenance: z.discriminatedUnion('kind', [z.object({ kind: z.literal('local') }), z.object({ kind: z.literal('imported'), sourceProfileId: z.string(), sourceExportId: z.string(), importedAt: z.string() }), z.object({ kind: z.literal('fork'), sourceProfileId: z.string(), sourceExportId: z.string().optional(), forkedAt: z.string() })]), permissions: z.object({ editable: z.boolean() }), contentVersion: z.string(), createdAt: z.string().datetime(), updatedAt: z.string().datetime(), legacy: z.object({ rawData: z.unknown(), unmappedItems: z.array(z.unknown()) }).optional() });
 const envelopeSchema = z.object({ kind: z.literal('ra-smorgasbord-profile'), schemaVersion: z.literal(2), exportId: z.string().min(1), exportedAt: z.string().datetime(), contentVersion: z.string(), privacy: z.object({ includesNotes: z.boolean(), encoding: z.literal('base64'), encrypted: z.literal(false) }), profile: profileSchema, digest: z.string().min(1) });
 
 export function makeId(): string { if (typeof crypto !== 'undefined' && typeof crypto.randomUUID === 'function') return crypto.randomUUID(); return `${Date.now()}-${Math.random().toString(36).slice(2)}`; }
 export function describePerspective(authorName: string, subjectName: string): string { return `${authorName || '未填写'}填写了自己与${subjectName || '未填写'}的这段关系`; }
-export function isAnswerEffective(answer: Partial<CardAnswerV2> | undefined): boolean { return Boolean(answer?.stance || answer?.participation || (answer?.markers?.length ?? 0) > 0 || answer?.note?.trim()); }
+function normalizeLegacyStatus(value: string): string { const aliases: Record<string, string> = { yes: 'agree', required: 'necessary', maybe_future: 'future_possible', lets_talk: 'need_discussion', definitely_no: 'absolutely_not' }; return aliases[value.trim()] || value.trim(); }
+export function getAnswerStatuses(answer: Partial<CardAnswerV2> | undefined): StatusLabel[] {
+  if (!answer) return [];
+  const explicit = answer.statuses?.map(String).map(normalizeLegacyStatus).filter(status => suggestedStatusSet.has(status)) as StatusLabel[] | undefined;
+  if (explicit?.length) return [...new Set(explicit)];
+  const raw = answer.legacy?.rawStatuses.map(normalizeLegacyStatus).filter(status => suggestedStatusSet.has(status)) as StatusLabel[] | undefined;
+  if (raw?.length) return [...new Set(raw)];
+  const restored: StatusLabel[] = [];
+  if (answer.stance === 'want') restored.push('agree');
+  if (answer.stance === 'open' || answer.stance === 'unsure') restored.push('maybe');
+  if (answer.stance === 'not_for_me') restored.push('absolutely_not');
+  if (answer.stance === 'hard_limit') restored.push('hard_limit');
+  for (const marker of answer.markers || []) restored.push(marker === 'important' ? 'necessary' : marker);
+  return [...new Set(restored)];
+}
+export function isAnswerEffective(answer: Partial<CardAnswerV2> | undefined): boolean { return Boolean(getAnswerStatuses(answer).length || answer?.participation || answer?.note?.trim()); }
 export type ComparisonKind = '相近' | '有所不同' | '值得聊聊' | '有人未回答' | '都有备注' | '需要阅读语境';
 export function classifyComparison(answers: Array<Partial<CardAnswerV2> | undefined>): ComparisonKind {
   const effective = answers.filter(isAnswerEffective);
   if (effective.length < answers.length) return '有人未回答';
-  if (answers.some(answer => answer?.markers?.includes('need_discussion') || answer?.stance === 'hard_limit')) return '值得聊聊';
-  const noteOnly = (answer: Partial<CardAnswerV2> | undefined) => Boolean(answer?.note?.trim()) && !answer?.stance && !answer?.participation && !(answer?.markers?.length);
+  if (answers.some(answer => { const statuses = getAnswerStatuses(answer); return statuses.includes('need_discussion') || statuses.includes('hard_limit'); })) return '值得聊聊';
+  const noteOnly = (answer: Partial<CardAnswerV2> | undefined) => Boolean(answer?.note?.trim()) && !getAnswerStatuses(answer).length && !answer?.participation;
   if (answers.every(noteOnly)) return '都有备注';
   if (answers.some(noteOnly)) return '需要阅读语境';
-  const stances = new Set(answers.map(answer => answer?.stance));
-  const markers = new Set(answers.flatMap(answer => answer?.markers || []));
+  const statuses = new Set(answers.map(answer => getAnswerStatuses(answer).slice().sort().join('|')));
   const participation = new Set(answers.map(answer => answer?.participation));
-  if (answers.every(answer => Boolean(answer?.note?.trim())) && (stances.size > 1 || markers.size > 1 || participation.size > 1)) return '需要阅读语境';
-  return stances.size <= 1 && markers.size <= 1 && participation.size <= 1 ? '相近' : '有所不同';
+  if (answers.every(answer => Boolean(answer?.note?.trim())) && (statuses.size > 1 || participation.size > 1)) return '需要阅读语境';
+  return statuses.size <= 1 && participation.size <= 1 ? '相近' : '有所不同';
 }
-export function normalizeAnswer(answer: CardAnswerV2): CardAnswerV2 | undefined { const normalized = { ...answer, note: answer.note?.trim() || undefined }; return isAnswerEffective(normalized) ? normalized : undefined; }
+export function normalizeAnswer(answer: CardAnswerV2): CardAnswerV2 | undefined { const normalized = { ...answer, statuses: answer.statuses?.length ? [...new Set(answer.statuses)] : undefined, note: answer.note?.trim() || undefined }; return isAnswerEffective(normalized) ? normalized : undefined; }
 export function createProfile(title: string, authorName: string, subjectName: string, relationLabels: string[] = []): ProfileV2 { const now = new Date().toISOString(); return { schemaVersion: 2, id: makeId(), title: title.trim() || `${authorName} → ${subjectName}`, direction: { author: { id: makeId(), displayName: authorName.trim() }, subject: { id: makeId(), displayName: subjectName.trim() } }, relationLabels, selectedCategoryIds: [], answers: {}, provenance: { kind: 'local' }, permissions: { editable: true }, contentVersion: CONTENT_VERSION, createdAt: now, updatedAt: now }; }
 
-export function migrateLegacyStatuses(rawStatuses: string[] = []): Pick<CardAnswerV2, 'stance' | 'markers' | 'participation' | 'legacy'> {
-  const stances: Stance[] = []; const markers: AnswerMarker[] = []; const participations: Participation[] = []; let unknownStatus = false;
-  const aliases: Record<string, string> = { yes: 'agree', required: 'necessary', maybe_future: 'future_possible', lets_talk: 'need_discussion', definitely_no: 'absolutely_not' };
-  for (const rawValue of rawStatuses) { const raw = aliases[rawValue.trim()] || rawValue.trim(); if (raw === 'agree') stances.push('want'); else if (raw === 'will_do') participations.push('self'); else if (raw === 'maybe') stances.push('unsure'); else if (raw === 'absolutely_not') stances.push('not_for_me'); else if (raw === 'hard_limit') stances.push('hard_limit'); else if (raw === 'necessary') markers.push('important'); else if (raw === 'future_possible') markers.push('future_possible'); else if (raw === 'need_discussion') markers.push('need_discussion'); else if (raw === 'they_will') participations.push('other'); else if (raw === 'together') participations.push('together'); else if (raw === 'unwilling') stances.push('not_for_me'); else unknownStatus = true; }
-  const uniqueStances = [...new Set(stances)]; const uniqueParticipations = [...new Set(participations)]; const needsReview = unknownStatus || uniqueStances.length > 1 || uniqueParticipations.length > 1 || (uniqueStances.includes('hard_limit') && markers.includes('important'));
-  return { stance: uniqueStances[0], markers: [...new Set(markers)], participation: uniqueParticipations[0], legacy: rawStatuses.length ? { rawStatuses, needsReview } : undefined };
+export function migrateLegacyStatuses(rawStatuses: string[] = []): Pick<CardAnswerV2, 'statuses' | 'participation' | 'legacy'> {
+  const statuses: StatusLabel[] = []; const participations: Participation[] = []; let unknownStatus = false;
+  for (const rawValue of rawStatuses) { const raw = normalizeLegacyStatus(rawValue); if (suggestedStatusSet.has(raw)) statuses.push(raw as StatusLabel); else if (raw === 'will_do') participations.push('self'); else if (raw === 'they_will') participations.push('other'); else if (raw === 'together') participations.push('together'); else if (raw === 'unwilling') statuses.push('absolutely_not'); else unknownStatus = true; }
+  const uniqueParticipations = [...new Set(participations)]; const needsReview = unknownStatus || uniqueParticipations.length > 1;
+  return { statuses: [...new Set(statuses)], participation: uniqueParticipations[0], legacy: rawStatuses.length ? { rawStatuses, needsReview } : undefined };
 }
 
 function migrateProgress(progress: LegacyV1Profile['progress'] = []) { const answers: ProfileV2['answers'] = {}; for (const category of progress || []) { const categoryAnswers: Record<string, CardAnswerV2> = {}; for (const old of category.answers || []) { const answer = normalizeAnswer({ cardId: old.cardId, ...migrateLegacyStatuses(old.statuses || []), note: old.note, updatedAt: new Date().toISOString() }); if (answer) categoryAnswers[old.cardId] = answer; } if (Object.keys(categoryAnswers).length) answers[category.categoryId] = { categoryId: category.categoryId, answers: categoryAnswers }; } return answers; }
